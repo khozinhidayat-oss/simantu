@@ -1,0 +1,107 @@
+<script>
+    function initLaporan() {
+        if(document.getElementById('hasilLaporanContainer')) if(document.getElementById('hasilLaporanContainer')) if(document.getElementById('hasilLaporanContainer')) document.getElementById('hasilLaporanContainer').style.display = 'none';
+        document.getElementById('formFilterLaporan').reset();
+    }
+
+    function generateLaporan(e) {
+        e.preventDefault();
+        
+        const kelas = document.getElementById('filterKelasLap').value;
+        const mapel = document.getElementById('filterMapelLap').value;
+        const tglMulai = document.getElementById('filterTglMulai').value;
+        const tglAkhir = document.getElementById('filterTglAkhir').value;
+
+        let periodeStr = 'Semua Waktu';
+        if(tglMulai && tglAkhir) periodeStr = `${tglMulai} s.d ${tglAkhir}`;
+        else if(tglMulai) periodeStr = `Mulai ${tglMulai}`;
+        else if(tglAkhir) periodeStr = `Sampai ${tglAkhir}`;
+
+        if(document.getElementById('infoLaporanText')) if(document.getElementById('infoLaporanText')) if(document.getElementById('infoLaporanText')) document.getElementById('infoLaporanText').textContent = `${kelas} | ${mapel} | Periode: ${periodeStr}`;
+        
+        showLoading('Menyusun Laporan...');
+
+        const filter = { kelas, mapel, tglMulai, tglAkhir };
+
+        if(typeof google !== 'undefined' && google.script) {
+            google.script.run
+                .withSuccessHandler((res) => {
+                    hideLoading();
+                    if(res.success) {
+                        renderHasilLaporan(res.stats, res.data);
+                    } else {
+                        showAlert('Error', res.message, 'error');
+                    }
+                })
+                .getLaporanData(filter);
+        } else {
+            // Dummy Data
+            setTimeout(() => {
+                hideLoading();
+                const stats = { totalPertemuan: 12, rataHadir: '95%', rataNilai: 82.5 };
+                const data = [
+                    { id: 'S01', nis: '2023001', nama: 'Adi Putra', hadir: 11, izin: 1, sakit: 0, alpha: 0, nilai: 78, status: 'Tuntas' },
+                    { id: 'S02', nis: '2023002', nama: 'Budi Santoso', hadir: 12, izin: 0, sakit: 0, alpha: 0, nilai: 85, status: 'Tuntas' },
+                    { id: 'S03', nis: '2023003', nama: 'Citra Lestari', hadir: 10, izin: 0, sakit: 2, alpha: 0, nilai: 90, status: 'Tuntas' },
+                    { id: 'S04', nis: '2023004', nama: 'Dewi Ayu', hadir: 8, izin: 1, sakit: 0, alpha: 3, nilai: 60, status: 'Belum Tuntas' }
+                ];
+                renderHasilLaporan(stats, data);
+            }, 800);
+        }
+    }
+
+    function renderHasilLaporan(stats, data) {
+        if(document.getElementById('hasilLaporanContainer')) if(document.getElementById('hasilLaporanContainer')) if(document.getElementById('hasilLaporanContainer')) document.getElementById('hasilLaporanContainer').style.display = 'block';
+        
+        // Render Stats
+        if(document.getElementById('lapTotalPertemuan')) if(document.getElementById('lapTotalPertemuan')) if(document.getElementById('lapTotalPertemuan')) document.getElementById('lapTotalPertemuan').textContent = stats.totalPertemuan;
+        if(document.getElementById('lapRataHadir')) if(document.getElementById('lapRataHadir')) if(document.getElementById('lapRataHadir')) document.getElementById('lapRataHadir').textContent = stats.rataHadir;
+        if(document.getElementById('lapRataNilai')) if(document.getElementById('lapRataNilai')) if(document.getElementById('lapRataNilai')) document.getElementById('lapRataNilai').textContent = stats.rataNilai;
+
+        // Render Table
+        const tbody = document.getElementById('laporanTableBody');
+        let html = '';
+
+        if(data.length === 0) {
+            html = `<tr><td colspan="8" class="text-center text-muted py-5">Tidak ada data untuk laporan ini.</td></tr>`;
+        } else {
+            data.forEach((siswa, index) => {
+                const nilaiColor = siswa.status === 'Belum Tuntas' ? 'text-danger' : 'text-dark';
+                
+                html += `
+                    <tr class="text-center">
+                        <td class="text-muted">${index + 1}</td>
+                        <td class="text-start">
+                            <div class="fw-bold text-dark">${siswa.nama}</div>
+                            <div class="text-muted small font-monospace">${siswa.nis}</div>
+                        </td>
+                        <td class="fw-medium text-success">${siswa.hadir}</td>
+                        <td class="fw-medium text-info">${siswa.izin}</td>
+                        <td class="fw-medium text-warning">${siswa.sakit}</td>
+                        <td class="fw-medium text-danger">${siswa.alpha}</td>
+                        <td class="fw-bold fs-6 ${nilaiColor}">${siswa.nilai}</td>
+                        <td class="text-start">
+                            <span class="badge ${siswa.status === 'Tuntas' ? 'bg-success' : 'bg-danger'} bg-opacity-10 ${siswa.status === 'Tuntas' ? 'text-success border-success' : 'text-danger border-danger'} border border-opacity-25 px-2 py-1">${siswa.status}</span>
+                        </td>
+                    </tr>
+                `;
+            });
+        }
+        tbody.innerHTML = html;
+    }
+
+    function exportLaporan(type) {
+        let title = type === 'pdf' ? 'Mencetak PDF' : 'Mengunduh Excel';
+        let msg = type === 'pdf' ? 'Dokumen PDF sedang di-generate. Silakan tunggu.' : 'File Excel sedang disiapkan untuk diunduh.';
+        
+        Swal.fire({
+            title: title,
+            text: msg,
+            icon: 'info',
+            timer: 2000,
+            showConfirmButton: false
+        }).then(() => {
+            showAlert('Berhasil', 'Simulasi export ' + type.toUpperCase() + ' selesai pada mode Preview.', 'success');
+        });
+    }
+</script>

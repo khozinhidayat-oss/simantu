@@ -1,0 +1,56 @@
+<script>
+    function initLogin() {
+        if(typeof google !== 'undefined' && google.script) {
+            google.script.run
+                .withSuccessHandler(function(email) {
+                    if (email) {
+                        document.getElementById('googleAccountInfo').classList.remove('d-none');
+                        document.getElementById('displayEmail').innerText = email;
+                    } else {
+                        document.getElementById('googleAccountInfo').classList.remove('d-none');
+                        document.getElementById('displayEmail').innerText = "Belum teridentifikasi";
+                    }
+                })
+                .getGoogleAccountEmail();
+        } else {
+            document.getElementById('googleAccountInfo').classList.remove('d-none');
+            document.getElementById('displayEmail').innerText = "Aplikasi harus dijalankan di dalam Google Workspace";
+        }
+    }
+
+    function loginWithGoogleAccount() {
+        showLoading('Memverifikasi akun Google Anda...');
+        
+        const inputEmail = document.getElementById('inputEmail').value;
+        if (!inputEmail) {
+            hideLoading();
+            showAlert('Peringatan', 'Harap masukkan email Anda.', 'warning');
+            return;
+        }
+        
+        if(typeof google !== 'undefined' && google.script) {
+            google.script.run
+                .withSuccessHandler(function(response) {
+                    hideLoading();
+                    if(response.success) {
+                        localStorage.setItem('simengajar_session_id', response.session.sessionId);
+                        currentUser = response.session;
+                        showAlert('Berhasil', response.message, 'success');
+                        setTimeout(function() {
+                            loadPage('dashboard');
+                        }, 1000);
+                    } else {
+                        showAlert(response.isWarning ? 'Peringatan' : 'Akses Ditolak', response.message, response.isWarning ? 'warning' : 'error');
+                    }
+                })
+                .withFailureHandler(function(err) {
+                    hideLoading();
+                    showAlert('Kesalahan Server', err.message, 'error');
+                })
+                .loginWithGoogle(inputEmail);
+        } else {
+            hideLoading();
+            showAlert('Akses Ditolak', 'Aplikasi harus dijalankan dari Google Apps Script / Google Workspace.', 'error');
+        }
+    }
+</script>

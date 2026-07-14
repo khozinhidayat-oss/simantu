@@ -1,0 +1,44 @@
+<div class="sidebar bg-white border-end position-fixed top-0 start-0 h-100 d-flex flex-column shadow-sm" style="width: 260px; z-index: 1040; transition: all 0.3s ease; background-color: var(--sidebar-bg) !important;" id="sidebar">
+    <div class="d-flex align-items-center px-4 py-3 border-bottom" style="height: 70px;">
+        <div class="bg-primary text-white rounded d-flex align-items-center justify-content-center me-3 shadow-sm" style="width: 38px; height: 38px;">
+            <i class="fas fa-graduation-cap fs-5"></i>
+        </div>
+        <h5 class="fw-bold text-dark mb-0 tracking-tight" style="letter-spacing: -0.5px;">SI-MENGAJAR</h5>
+    </div>
+    
+    <div class="p-3 flex-grow-1 overflow-auto custom-scrollbar">
+        <ul class="nav flex-column gap-1">
+            <li class="nav-item">
+                <a href="#" class="nav-link text-dark rounded-3" onclick="loadPage('dashboard')" id="nav-link-dashboard">
+                    <i class="fas fa-gauge fa-fw me-3"></i> Dashboard
+                </a>
+            </li>
+            <li class="nav-item">
+                <a href="#" class="nav-link text-dark rounded-3" onclick="loadPage('jadwal')" id="nav-link-jadwal">
+                    <i class="fas fa-calendar-alt fa-fw me-3"></i> Jadwal Mengajar
+                </a>
+            </li>
+            
+            <li class="nav-item mt-4 mb-2 px-3 text-muted fw-bold text-uppercase" style="font-size: 10px; letter-spacing: 1px;">Master Data</li>
+            <li class="nav-item"><a href="#" class="nav-link text-dark rounded-3" onclick="loadPage('siswa')" id="nav-link-siswa"><i class="fas fa-users fa-fw me-3"></i> Data Siswa</a></li>
+            <li class="nav-item"><a href="#" class="nav-link text-dark rounded-3" onclick="loadPage('kelas')" id="nav-link-kelas"><i class="fas fa-school fa-fw me-3"></i> Data Kelas</a></li>
+            <li class="nav-item"><a href="#" class="nav-link text-dark rounded-3" onclick="loadPage('mapel')" id="nav-link-mapel"><i class="fas fa-book fa-fw me-3"></i> Mata Pelajaran</a></li>
+            
+            <li class="nav-item mt-4 mb-2 px-3 text-muted fw-bold text-uppercase" style="font-size: 10px; letter-spacing: 1px;">Administrasi</li>
+            <li class="nav-item"><a href="#" class="nav-link text-dark rounded-3" onclick="loadPage('absensi')" id="nav-link-absensi"><i class="fas fa-clipboard-check fa-fw me-3"></i> Absensi Siswa</a></li>
+            <li class="nav-item"><a href="#" class="nav-link text-dark rounded-3" onclick="loadPage('modul')" id="nav-link-modul"><i class="fas fa-book-open fa-fw me-3"></i> Modul Ajar</a></li>
+            <li class="nav-item"><a href="#" class="nav-link text-dark rounded-3" onclick="loadPage('jurnal')" id="nav-link-jurnal"><i class="fas fa-pen fa-fw me-3"></i> Jurnal Mengajar</a></li>
+            <li class="nav-item"><a href="#" class="nav-link text-dark rounded-3" onclick="loadPage('penilaian')" id="nav-link-penilaian"><i class="fas fa-chart-bar fa-fw me-3"></i> Penilaian</a></li>
+            
+            <li class="nav-item mt-4 mb-2 px-3 text-muted fw-bold text-uppercase" style="font-size: 10px; letter-spacing: 1px;">Sistem</li>
+            <li class="nav-item"><a href="#" class="nav-link text-dark rounded-3" onclick="loadPage('laporan')" id="nav-link-laporan"><i class="fas fa-file-alt fa-fw me-3"></i> Rekap Laporan</a></li>
+            <li class="nav-item"><a href="#" class="nav-link text-dark rounded-3" onclick="loadPage('pengaturan')" id="nav-link-pengaturan"><i class="fas fa-gear fa-fw me-3"></i> Pengaturan</a></li>
+        </ul>
+    </div>
+    
+    <div class="p-4 border-top" style="background-color: var(--hover-bg);">
+        <a href="#" class="nav-link text-danger rounded-3 py-2 px-3 fw-medium d-flex align-items-center" onclick="logout()" style="color: var(--bs-danger) !important; background-color: rgba(239, 68, 68, 0.1);">
+            <i class="fas fa-arrow-right-from-bracket fa-fw me-3"></i> Keluar Sistem
+        </a>
+    </div>
+</div>

@@ -1,0 +1,240 @@
+<script>
+    var currentModulData = [];
+    var modalModulInstance = null;
+
+    function initModul() {
+        showLoading('Memuat Data Modul...');
+        if(typeof google !== 'undefined' && google.script) {
+            google.script.run
+                .withSuccessHandler((res) => {
+                    hideLoading();
+                    if(res.success) {
+                        currentModulData = res.data;
+                        renderTabelModul();
+                    } else {
+                        showAlert('Error', res.message, 'error');
+                    }
+                })
+                .getModulData(currentUser ? currentUser.email : '');
+        } else {
+            // Dummy Data
+            setTimeout(() => {
+                hideLoading();
+                currentModulData = [
+                    { id: 'M01', kode: 'MA-MAT-XII-1', nama: 'Dimensi Tiga', semester: 'Ganjil', fase: 'F', cp: 'Peserta didik dapat menentukan jarak dalam ruang', tp: '1. Menentukan jarak titik ke titik.\n2. Menentukan jarak titik ke garis.', atp: 'Dimensi Tiga Dasar -> Jarak Ruang', materi: 'Geometri Ruang', metode: 'Diskusi, Tanya Jawab', media: 'PPT, Geogebra', model: 'Problem Based Learning', pendekatan: 'Saintifik', asesmen: 'Formatif (Kuis), Sumatif (Ulangan Harian)', waktu: '12 JP', lampiran: 'dimensi_tiga.pdf', status: 'Selesai', revisi: 'Rev 1.0' },
+                    { id: 'M02', kode: 'MA-MAT-XII-2', nama: 'Statistika', semester: 'Ganjil', fase: 'F', cp: 'Peserta didik dapat mengolah dan menganalisis data', tp: '1. Menyajikan data berkelompok.\n2. Menentukan ukuran pemusatan data.', atp: 'Penyajian Data -> Ukuran Pemusatan -> Ukuran Penyebaran', materi: 'Statistika Deskriptif', metode: 'Proyek, Diskusi', media: 'Excel, PPT', model: 'Project Based Learning', pendekatan: 'STEM', asesmen: 'Proyek Kelompok, Tes Tulis', waktu: '16 JP', lampiran: 'statistika_proyek.pdf', status: 'Draft', revisi: '-' }
+                ];
+                renderTabelModul();
+            }, 500);
+        }
+    }
+
+    function renderTabelModul() {
+        const tbody = document.getElementById('modulTableBody');
+        if(document.getElementById('totalModulCount')) if(document.getElementById('totalModulCount')) if(document.getElementById('totalModulCount')) document.getElementById('totalModulCount').textContent = currentModulData.length;
+        
+        let html = '';
+        if(currentModulData.length === 0) {
+            html = `<tr><td colspan="7" class="text-center text-muted py-5">Belum ada data Modul Ajar.</td></tr>`;
+        } else {
+            currentModulData.forEach((modul, index) => {
+                let badgeStatus = 'bg-secondary';
+                if(modul.status === 'Selesai') badgeStatus = 'bg-success';
+                else if(modul.status === 'Revisi') badgeStatus = 'bg-warning text-dark';
+                
+                html += `
+                    <tr class="modul-row">
+                        <td class="ps-4 text-muted">${index + 1}</td>
+                        <td class="font-monospace text-primary fw-bold" style="font-size:13px;">${modul.kode}</td>
+                        <td>
+                            <div class="fw-bold text-dark modul-nama">${modul.nama}</div>
+                            <div class="text-muted small mt-1 text-truncate" style="max-width:200px;" title="${modul.materi}">${modul.materi}</div>
+                        </td>
+                        <td>
+                            <div class="badge bg-light border text-dark mb-1">Fase ${modul.fase}</div>
+                            <div class="text-muted small">Smst ${modul.semester}</div>
+                        </td>
+                        <td>
+                            <span class="badge ${badgeStatus} bg-opacity-10 text-${badgeStatus.replace('bg-','').replace(' text-dark','')} border border-${badgeStatus.replace('bg-','').replace(' text-dark','')} border-opacity-25 px-2 py-1">${modul.status}</span>
+                        </td>
+                        <td class="text-muted small">${modul.revisi}</td>
+                        <td class="pe-4 text-end">
+                            <button class="btn btn-sm btn-light border text-primary me-1" onclick="editModul('${modul.id}')" title="Edit">
+                                <i class="fas fa-edit"></i>
+                            </button>
+                            <button class="btn btn-sm btn-light border text-danger" onclick="hapusModul('${modul.id}')" title="Hapus">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </td>
+                    </tr>
+                `;
+            });
+        }
+        tbody.innerHTML = html;
+    }
+
+    function filterModul() {
+        const input = document.getElementById('searchModul').value.toLowerCase();
+        const rows = document.querySelectorAll('.modul-row');
+        rows.forEach(row => {
+            const nama = row.querySelector('.modul-nama').textContent.toLowerCase();
+            const kode = row.querySelector('.font-monospace').textContent.toLowerCase();
+            if(nama.includes(input) || kode.includes(input)) {
+                row.style.display = '';
+            } else {
+                row.style.display = 'none';
+            }
+        });
+    }
+
+    function showModalModul() {
+        document.getElementById('formModul').reset();
+        if(document.getElementById('modulId')) if(document.getElementById('modulId')) if(document.getElementById('modulId')) document.getElementById('modulId').value = '';
+        if(document.getElementById('modalModulLabel')) if(document.getElementById('modalModulLabel')) if(document.getElementById('modalModulLabel')) document.getElementById('modalModulLabel').textContent = 'Tambah Modul Ajar Baru';
+        if(document.getElementById('modulLampiranLabel')) if(document.getElementById('modulLampiranLabel')) if(document.getElementById('modulLampiranLabel')) document.getElementById('modulLampiranLabel').textContent = 'Belum ada file';
+        
+        if(!modalModulInstance) {
+            modalModulInstance = new bootstrap.Modal(document.getElementById('modalModul'));
+        }
+        modalModulInstance.show();
+    }
+
+    function editModul(id) {
+        const modul = currentModulData.find(m => m.id === id);
+        if(!modul) return;
+
+        if(document.getElementById('modulId')) if(document.getElementById('modulId')) if(document.getElementById('modulId')) document.getElementById('modulId').value = modul.id;
+        if(document.getElementById('modulKode')) if(document.getElementById('modulKode')) if(document.getElementById('modulKode')) document.getElementById('modulKode').value = modul.kode;
+        if(document.getElementById('modulNama')) if(document.getElementById('modulNama')) if(document.getElementById('modulNama')) document.getElementById('modulNama').value = modul.nama;
+        if(document.getElementById('modulFase')) if(document.getElementById('modulFase')) if(document.getElementById('modulFase')) document.getElementById('modulFase').value = modul.fase;
+        if(document.getElementById('modulSemester')) if(document.getElementById('modulSemester')) if(document.getElementById('modulSemester')) document.getElementById('modulSemester').value = modul.semester;
+        if(document.getElementById('modulStatus')) if(document.getElementById('modulStatus')) if(document.getElementById('modulStatus')) document.getElementById('modulStatus').value = modul.status;
+        if(document.getElementById('modulWaktu')) if(document.getElementById('modulWaktu')) if(document.getElementById('modulWaktu')) document.getElementById('modulWaktu').value = modul.waktu || '';
+        if(document.getElementById('modulRevisi')) if(document.getElementById('modulRevisi')) if(document.getElementById('modulRevisi')) document.getElementById('modulRevisi').value = modul.revisi || '';
+        
+        if(document.getElementById('modulCP')) if(document.getElementById('modulCP')) if(document.getElementById('modulCP')) document.getElementById('modulCP').value = modul.cp || '';
+        if(document.getElementById('modulTP')) if(document.getElementById('modulTP')) if(document.getElementById('modulTP')) document.getElementById('modulTP').value = modul.tp || '';
+        if(document.getElementById('modulATP')) if(document.getElementById('modulATP')) if(document.getElementById('modulATP')) document.getElementById('modulATP').value = modul.atp || '';
+        if(document.getElementById('modulMateri')) if(document.getElementById('modulMateri')) if(document.getElementById('modulMateri')) document.getElementById('modulMateri').value = modul.materi || '';
+        
+        if(document.getElementById('modulPendekatan')) if(document.getElementById('modulPendekatan')) if(document.getElementById('modulPendekatan')) document.getElementById('modulPendekatan').value = modul.pendekatan || '';
+        if(document.getElementById('modulModel')) if(document.getElementById('modulModel')) if(document.getElementById('modulModel')) document.getElementById('modulModel').value = modul.model || '';
+        if(document.getElementById('modulMetode')) if(document.getElementById('modulMetode')) if(document.getElementById('modulMetode')) document.getElementById('modulMetode').value = modul.metode || '';
+        if(document.getElementById('modulMedia')) if(document.getElementById('modulMedia')) if(document.getElementById('modulMedia')) document.getElementById('modulMedia').value = modul.media || '';
+        if(document.getElementById('modulAsesmen')) if(document.getElementById('modulAsesmen')) if(document.getElementById('modulAsesmen')) document.getElementById('modulAsesmen').value = modul.asesmen || '';
+        
+        if(document.getElementById('modulLampiranLabel')) if(document.getElementById('modulLampiranLabel')) if(document.getElementById('modulLampiranLabel')) document.getElementById('modulLampiranLabel').textContent = modul.lampiran ? modul.lampiran : 'Belum ada file';
+
+        if(document.getElementById('modalModulLabel')) if(document.getElementById('modalModulLabel')) if(document.getElementById('modalModulLabel')) document.getElementById('modalModulLabel').textContent = 'Edit Modul Ajar';
+        
+        if(!modalModulInstance) {
+            modalModulInstance = new bootstrap.Modal(document.getElementById('modalModul'));
+        }
+        modalModulInstance.show();
+    }
+
+    function simpanModul() {
+        // Validasi
+        const form = document.getElementById('formModul');
+        if(!form.checkValidity()) {
+            form.reportValidity();
+            return;
+        }
+
+        const id = document.getElementById('modulId').value;
+        const payload = {
+            id: id || 'M' + new Date().getTime(),
+            kode: document.getElementById('modulKode').value,
+            nama: document.getElementById('modulNama').value,
+            fase: document.getElementById('modulFase').value,
+            semester: document.getElementById('modulSemester').value,
+            status: document.getElementById('modulStatus').value,
+            waktu: document.getElementById('modulWaktu').value,
+            revisi: document.getElementById('modulRevisi').value,
+            cp: document.getElementById('modulCP').value,
+            tp: document.getElementById('modulTP').value,
+            atp: document.getElementById('modulATP').value,
+            materi: document.getElementById('modulMateri').value,
+            pendekatan: document.getElementById('modulPendekatan').value,
+            model: document.getElementById('modulModel').value,
+            metode: document.getElementById('modulMetode').value,
+            media: document.getElementById('modulMedia').value,
+            asesmen: document.getElementById('modulAsesmen').value
+        };
+
+        // Handle file lampiran (simulasi nama file saja untuk saat ini)
+        const fileInput = document.getElementById('modulLampiran');
+        if(fileInput.files.length > 0) {
+            payload.lampiran = fileInput.files[0].name;
+        } else {
+            payload.lampiran = id ? currentModulData.find(m => m.id === id).lampiran : '';
+        }
+
+        modalModulInstance.hide();
+        showLoading('Menyimpan Data...');
+
+        if(typeof google !== 'undefined' && google.script) {
+            google.script.run
+                .withSuccessHandler((res) => {
+                    hideLoading();
+                    if(res.success) {
+                        showAlert('Sukses', res.message, 'success');
+                        initModul(); // Reload data
+                    } else {
+                        showAlert('Gagal', res.message, 'error');
+                    }
+                })
+                .saveModul(payload);
+        } else {
+            setTimeout(() => {
+                hideLoading();
+                if(id) {
+                    const idx = currentModulData.findIndex(m => m.id === id);
+                    if(idx !== -1) currentModulData[idx] = payload;
+                } else {
+                    currentModulData.push(payload);
+                }
+                renderTabelModul();
+                showAlert('Berhasil', 'Modul Ajar berhasil disimpan (Preview Mode).', 'success');
+            }, 600);
+        }
+    }
+
+    function hapusModul(id) {
+        Swal.fire({
+            title: 'Hapus Modul?',
+            text: "Data modul yang dihapus tidak dapat dikembalikan!",
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#dc3545',
+            cancelButtonColor: '#6c757d',
+            confirmButtonText: 'Ya, Hapus!',
+            cancelButtonText: 'Batal',
+            reverseButtons: true
+        }).then((result) => {
+            if (result.isConfirmed) {
+                showLoading('Menghapus...');
+                if(typeof google !== 'undefined' && google.script) {
+                    google.script.run
+                        .withSuccessHandler((res) => {
+                            hideLoading();
+                            if(res.success) {
+                                showAlert('Terhapus', res.message, 'success');
+                                initModul();
+                            } else {
+                                showAlert('Gagal', res.message, 'error');
+                            }
+                        })
+                        .deleteModul(id);
+                } else {
+                    setTimeout(() => {
+                        hideLoading();
+                        currentModulData = currentModulData.filter(m => m.id !== id);
+                        renderTabelModul();
+                        showAlert('Terhapus', 'Modul berhasil dihapus (Preview Mode).', 'success');
+                    }, 600);
+                }
+            }
+        });
+    }
+</script>

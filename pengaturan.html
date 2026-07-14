@@ -1,0 +1,372 @@
+<div class="d-flex fade-in">
+    <div id="sidebar-container"></div>
+    
+    <div class="main-content flex-grow-1" id="main-wrapper">
+        <div id="navbar-container"></div>
+        
+        <div class="container-fluid p-4" style="margin-top: 70px;">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <div>
+                    <h3 class="fw-bold text-dark mb-1">Pengaturan Sistem</h3>
+                    <p class="text-muted mb-0">Kelola konfigurasi, akun, dan database aplikasi.</p>
+                </div>
+                <button class="btn btn-primary rounded-3 shadow-sm px-4" id="btnSaveConfig" onclick="saveConfigBtn()">
+                    <i class="fas fa-save me-2"></i>Simpan Perubahan
+                </button>
+            </div>
+
+            <div class="row g-4">
+                <!-- Sidebar Menu Pengaturan -->
+                <div class="col-md-3">
+                    <div class="card border-0 shadow-sm rounded-4 position-sticky" style="top: 90px;">
+                        <div class="card-body p-2">
+                            <ul class="nav flex-column gap-1" id="settingsMenu">
+                                <li class="nav-item">
+                                    <a class="nav-link rounded-3 px-3 py-2 text-dark fw-medium d-flex align-items-center" href="#" onclick="switchSettingTab('drive', this)">
+                                        <i class="fab fa-google-drive fa-fw text-primary me-3"></i> Google Drive
+                                    </a>
+                                </li>
+                                <li class="nav-item">
+                                    <a class="nav-link rounded-3 px-3 py-2 text-dark active-nav fw-medium d-flex align-items-center" href="#" onclick="switchSettingTab('db', this)">
+                                        <i class="fas fa-database fa-fw text-primary me-3"></i> Database
+                                    </a>
+                                </li>
+                                <li class="nav-item">
+                                    <a class="nav-link rounded-3 px-3 py-2 text-dark fw-medium d-flex align-items-center" href="#" onclick="switchSettingTab('backup', this)">
+                                        <i class="fas fa-cloud-download-alt fa-fw text-success me-3"></i> Backup & Restore
+                                    </a>
+                                </li>
+                                <li class="nav-item">
+                                    <a class="nav-link rounded-3 px-3 py-2 text-dark fw-medium d-flex align-items-center" href="#" onclick="switchSettingTab('app', this)">
+                                        <i class="fas fa-sliders-h fa-fw text-warning me-3"></i> Konfigurasi
+                                    </a>
+                                </li>
+                                <li class="nav-item border-top mt-2 pt-2">
+                                    <a class="nav-link rounded-3 px-3 py-2 text-dark fw-medium d-flex align-items-center" href="#" onclick="switchSettingTab('sys', this)">
+                                        <i class="fas fa-info-circle fa-fw text-info me-3"></i> Info Sistem
+                                    </a>
+                                </li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Konten Pengaturan -->
+                <div class="col-md-9">
+                    
+                    <!-- Tab Drive -->
+                    <div id="tab-drive" class="setting-tab d-none slide-up">
+                        <div class="card border-0 shadow-sm rounded-4 mb-4">
+                            <div class="card-header bg-white border-bottom p-4">
+                                <h6 class="fw-bold mb-0 text-dark">Integrasi Google Drive</h6>
+                            </div>
+                            <div class="card-body p-4">
+                                <div class="d-flex align-items-center p-3 bg-light rounded-4 border mb-4">
+                                    <div class="bg-white rounded-circle d-flex align-items-center justify-content-center shadow-sm me-4" style="width: 60px; height: 60px;">
+                                        <i class="fab fa-google-drive text-primary" style="font-size: 28px;"></i>
+                                    </div>
+                                    <div class="flex-grow-1">
+                                        <h6 class="fw-bold text-dark mb-1" id="lbl-drive-name">Penyimpanan Aplikasi</h6>
+                                        <div class="d-flex align-items-center">
+                                            <span id="drive-status-badge" class="badge bg-secondary me-2">Memeriksa...</span>
+                                            <small class="text-muted font-monospace" id="drive-id-text">Memuat ID...</small>
+                                        </div>
+                                    </div>
+                                    <div class="ms-auto">
+                                        <button id="btn-open-drive" class="btn btn-outline-success btn-sm rounded-pill px-3 me-2 disabled" onclick="openDriveFolder()"><i class="fas fa-external-link-alt me-1"></i> Buka Folder</button>
+                                        <button class="btn btn-outline-primary btn-sm rounded-pill px-3 me-2" onclick="refreshDriveInfo()"><i class="fas fa-sync-alt me-1"></i> Refresh</button>
+                                        <button class="btn btn-primary btn-sm rounded-pill px-3" id="btn-connect-drive" onclick="connectDrive()"><i class="fas fa-plug me-1"></i> Hubungkan</button>
+                                    </div>
+                                </div>
+                                
+                                <div class="row g-4 mb-4">
+                                    <div class="col-md-6">
+                                        <ul class="list-group list-group-flush rounded-4 border">
+                                            <li class="list-group-item d-flex justify-content-between align-items-center p-3 bg-light">
+                                                <span class="text-muted small fw-bold">Jumlah Folder</span>
+                                                <span class="fw-bold text-dark" id="lbl-drive-folders">-</span>
+                                            </li>
+                                            <li class="list-group-item d-flex justify-content-between align-items-center p-3">
+                                                <span class="text-muted small fw-bold">Jumlah File</span>
+                                                <span class="fw-bold text-dark" id="lbl-drive-files">-</span>
+                                            </li>
+                                        </ul>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <ul class="list-group list-group-flush rounded-4 border">
+                                            <li class="list-group-item d-flex justify-content-between align-items-center p-3 bg-light">
+                                                <span class="text-muted small fw-bold">Penyimpanan Digunakan</span>
+                                                <span class="fw-bold text-dark" id="lbl-drive-used">-</span>
+                                            </li>
+                                            <li class="list-group-item d-flex justify-content-between align-items-center p-3">
+                                                <span class="text-muted small fw-bold">Sinkronisasi Terakhir</span>
+                                                <span class="fw-bold text-dark" id="lbl-drive-sync">-</span>
+                                            </li>
+                                        </ul>
+                                    </div>
+                                </div>
+                                
+                                <h6 class="fw-bold text-dark mb-3">Tindakan Penyimpanan</h6>
+                                <div class="row g-3">
+                                    <div class="col-md-4">
+                                        <button class="btn btn-outline-secondary w-100 py-3 rounded-4" onclick="syncDrive()">
+                                            <i class="fas fa-sync-alt d-block mb-2" style="font-size: 20px;"></i>
+                                            Validasi Folder
+                                        </button>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <button class="btn btn-outline-success w-100 py-3 rounded-4" onclick="backupDatabaseToDrive()">
+                                            <i class="fas fa-cloud-upload-alt d-block mb-2" style="font-size: 20px;"></i>
+                                            Backup Database
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Tab Database -->
+                    <div id="tab-db" class="setting-tab slide-up">
+                        <div class="card border-0 shadow-sm rounded-4 mb-4">
+                            <div class="card-header bg-white border-bottom p-4">
+                                <h6 class="fw-bold mb-0 text-dark">Status Koneksi Database</h6>
+                            </div>
+                            <div class="card-body p-4">
+                                
+                                <div class="d-flex align-items-center p-3 bg-light rounded-4 border mb-4">
+                                    <div class="bg-white rounded-circle d-flex align-items-center justify-content-center shadow-sm me-4" style="width: 60px; height: 60px;">
+                                        <img src="https://upload.wikimedia.org/wikipedia/commons/3/30/Google_Sheets_logo_%282014-2020%29.svg" alt="Sheets" width="30">
+                                    </div>
+                                    <div class="flex-grow-1">
+                                        <h6 class="fw-bold text-dark mb-1" id="lbl-db-name">Google Spreadsheet</h6>
+                                        <div class="d-flex align-items-center">
+                                            <span id="db-status-badge" class="badge bg-secondary me-2">Memeriksa...</span>
+                                            <small class="text-muted font-monospace" id="db-id-text">Memuat ID...</small>
+                                        </div>
+                                    </div>
+                                    <div class="ms-auto">
+                                        <a href="#" target="_blank" id="btn-open-db" class="btn btn-outline-success btn-sm rounded-pill px-3 me-2 disabled"><i class="fas fa-external-link-alt me-1"></i> Buka</a>
+                                        <button class="btn btn-outline-primary btn-sm rounded-pill px-3 me-2" onclick="refreshSettings()"><i class="fas fa-sync-alt me-1"></i> Refresh</button>
+                                        <button class="btn btn-primary btn-sm rounded-pill px-3 me-2" onclick="testConnection()"><i class="fas fa-plug me-1"></i> Uji Koneksi</button>
+                                        <button class="btn btn-outline-danger btn-sm rounded-pill px-3" id="btn-disconnect-db" onclick="disconnectDatabase()"><i class="fas fa-unlink me-1"></i> Putuskan Koneksi</button>
+                                    </div>
+                                </div>
+                                
+                                <div class="row mb-4">
+                                    <div class="col-md-6">
+                                        <ul class="list-group list-group-flush rounded-4 border">
+                                            <li class="list-group-item d-flex justify-content-between align-items-center p-3 bg-light">
+                                                <span class="text-muted small fw-bold">Jumlah Sheet</span>
+                                                <span class="fw-bold text-dark" id="lbl-db-sheets">-</span>
+                                            </li>
+                                            <li class="list-group-item d-flex justify-content-between align-items-center p-3">
+                                                <span class="text-muted small fw-bold">Tanggal Terhubung</span>
+                                                <span class="fw-bold text-dark" id="lbl-db-connected">-</span>
+                                            </li>
+                                            <li class="list-group-item d-flex justify-content-between align-items-center p-3 bg-light">
+                                                <span class="text-muted small fw-bold">Sinkronisasi Terakhir</span>
+                                                <span class="fw-bold text-dark" id="lbl-db-sync">-</span>
+                                            </li>
+                                        </ul>
+                                    </div>
+                                </div>
+
+                                <div class="row g-4">
+                                    <div class="col-md-6">
+                                        <div class="card border border-primary border-opacity-25 shadow-none rounded-4 h-100 hover-bg-light cursor-pointer transition" onclick="promptCreateNewDb()">
+                                            <div class="card-body p-4 text-center">
+                                                <div class="bg-primary bg-opacity-10 text-primary rounded-circle d-inline-flex align-items-center justify-content-center mb-3" style="width: 50px; height: 50px;">
+                                                    <i class="fas fa-plus"></i>
+                                                </div>
+                                                <h6 class="fw-bold text-dark">Buat Database Baru</h6>
+                                                <p class="text-muted small mb-0">Sistem akan membuat file Spreadsheet baru dengan struktur tabel lengkap.</p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="card border border-success border-opacity-25 shadow-none rounded-4 h-100 hover-bg-light cursor-pointer transition" onclick="openConnectDatabaseModal()">
+                                            <div class="card-body p-4 text-center">
+                                                <div class="bg-success bg-opacity-10 text-success rounded-circle d-inline-flex align-items-center justify-content-center mb-3" style="width: 50px; height: 50px;">
+                                                    <i class="fas fa-link"></i>
+                                                </div>
+                                                <h6 class="fw-bold text-dark">Tautkan Spreadsheet</h6>
+                                                <p class="text-muted small mb-0">Gunakan file Spreadsheet yang sudah pernah dibuat sebelumnya.</p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Tab Backup -->
+                    <div id="tab-backup" class="setting-tab d-none slide-up">
+                        <div class="card border-0 shadow-sm rounded-4 mb-4">
+                            <div class="card-header bg-white border-bottom p-4 d-flex justify-content-between align-items-center">
+                                <h6 class="fw-bold mb-0 text-dark">Manajemen Cadangan Data</h6>
+                                <button class="btn btn-sm btn-success rounded-3 px-3 fw-medium" onclick="doBackup()"><i class="fas fa-download me-2"></i>Buat Cadangan</button>
+                            </div>
+                            <div class="card-body p-0">
+                                <div class="table-responsive">
+                                    <table class="table table-hover mb-0 align-middle">
+                                        <thead class="table-light">
+                                            <tr>
+                                                <th class="ps-4">Nama File Backup</th>
+                                                <th>Tanggal</th>
+                                                <th class="text-end pe-4">Aksi</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="tbl-backups">
+                                            <tr><td colspan="3" class="text-center py-4 text-muted small"><i class="fas fa-spinner fa-spin me-2"></i>Memuat daftar backup...</td></tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Tab Konfigurasi Aplikasi -->
+                    <div id="tab-app" class="setting-tab d-none slide-up">
+                        <div class="card border-0 shadow-sm rounded-4 mb-4">
+                            <div class="card-header bg-white border-bottom p-4">
+                                <h6 class="fw-bold mb-0 text-dark">Pengaturan Identitas & Tampilan</h6>
+                            </div>
+                            <div class="card-body p-4">
+                                <form id="form-app-config">
+                                    <div class="row g-4">
+                                        <div class="col-md-12">
+                                            <div class="form-floating mb-3">
+                                                <input type="text" class="form-control" id="conf-namaSekolah" placeholder="Nama Sekolah">
+                                                <label for="conf-namaSekolah">Nama Sekolah / Instansi</label>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <div class="form-floating">
+                                                <select class="form-select" id="conf-semester">
+                                                    <option value="Ganjil">Ganjil</option>
+                                                    <option value="Genap">Genap</option>
+                                                </select>
+                                                <label for="conf-semester">Semester Aktif</label>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <div class="form-floating">
+                                                <input type="text" class="form-control" id="conf-tahunAjaran" placeholder="Tahun Ajaran">
+                                                <label for="conf-tahunAjaran">Tahun Ajaran</label>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Tab Sistem -->
+                    <div id="tab-sys" class="setting-tab d-none slide-up">
+                        <div class="card border-0 shadow-sm rounded-4 mb-4">
+                            <div class="card-header bg-white border-bottom p-4">
+                                <h6 class="fw-bold mb-0 text-dark">Informasi Sistem</h6>
+                            </div>
+                            <div class="card-body p-4">
+                                <div class="row g-3 mb-4">
+                                    <div class="col-sm-6 col-md-3">
+                                        <div class="p-3 bg-light rounded-4 border text-center">
+                                            <h4 class="fw-bold mb-1 text-primary" id="sys-guru">0</h4>
+                                            <small class="text-muted fw-medium">Total Guru</small>
+                                        </div>
+                                    </div>
+                                    <div class="col-sm-6 col-md-3">
+                                        <div class="p-3 bg-light rounded-4 border text-center">
+                                            <h4 class="fw-bold mb-1 text-success" id="sys-siswa">0</h4>
+                                            <small class="text-muted fw-medium">Total Siswa</small>
+                                        </div>
+                                    </div>
+                                    <div class="col-sm-6 col-md-3">
+                                        <div class="p-3 bg-light rounded-4 border text-center">
+                                            <h4 class="fw-bold mb-1 text-warning" id="sys-kelas">0</h4>
+                                            <small class="text-muted fw-medium">Total Kelas</small>
+                                        </div>
+                                    </div>
+                                    <div class="col-sm-6 col-md-3">
+                                        <div class="p-3 bg-light rounded-4 border text-center">
+                                            <h4 class="fw-bold mb-1 text-danger" id="sys-mapel">0</h4>
+                                            <small class="text-muted fw-medium">Total Mapel</small>
+                                        </div>
+                                    </div>
+                                </div>
+                                <ul class="list-group list-group-flush border rounded-4 shadow-sm">
+                                    <li class="list-group-item p-3 d-flex justify-content-between align-items-center bg-white">
+                                        <span class="text-muted fw-medium">Versi Aplikasi</span>
+                                        <span class="fw-bold text-dark" id="sys-version">1.0.0</span>
+                                    </li>
+                                    <li class="list-group-item p-3 d-flex justify-content-between align-items-center bg-white">
+                                        <span class="text-muted fw-medium">Tanggal Instalasi</span>
+                                        <span class="fw-bold text-dark font-monospace" id="sys-installDate">-</span>
+                                    </li>
+                                    <li class="list-group-item p-3 d-flex justify-content-between align-items-center bg-white">
+                                        <span class="text-muted fw-medium">Setup Status</span>
+                                        <span class="fw-bold text-success" id="sys-setupStatus">-</span>
+                                    </li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+            
+            <div id="footer-container" class="mt-4"></div>
+        </div>
+    </div>
+</div>
+<!-- Modal Koneksi Database -->
+<div class="modal fade" id="connectDatabaseModal" tabindex="-1" aria-labelledby="connectDatabaseModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content border-0 shadow-lg rounded-4">
+      <div class="modal-header border-bottom-0 pb-0 pt-4 px-4">
+        <h5 class="modal-title fw-bold text-dark" id="connectDatabaseModalLabel"><i class="fas fa-link text-primary me-2"></i>Koneksi Database</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body p-4">
+        <p class="text-muted small mb-4">Tautkan aplikasi dengan Google Spreadsheet yang sudah ada.</p>
+        
+        <ul class="nav nav-pills mb-3 nav-fill gap-2" id="dbConnectTab" role="tablist">
+          <li class="nav-item" role="presentation">
+            <button class="nav-link active rounded-3 fw-medium" id="url-tab" data-bs-toggle="pill" data-bs-target="#url-content" type="button" role="tab">Gunakan URL</button>
+          </li>
+          <li class="nav-item" role="presentation">
+            <button class="nav-link rounded-3 fw-medium" id="id-tab" data-bs-toggle="pill" data-bs-target="#id-content" type="button" role="tab">Gunakan ID</button>
+          </li>
+        </ul>
+        
+        <div class="tab-content" id="dbConnectTabContent">
+          <div class="tab-pane fade show active" id="url-content" role="tabpanel">
+            <div class="form-floating mb-3">
+              <input type="url" class="form-control" id="dbUrlInput" placeholder="https://docs.google.com/spreadsheets/d/...">
+              <label for="dbUrlInput">URL Google Spreadsheet</label>
+            </div>
+          </div>
+          <div class="tab-pane fade" id="id-content" role="tabpanel">
+            <div class="form-floating mb-3">
+              <input type="text" class="form-control font-monospace" id="dbIdInput" placeholder="Spreadsheet ID">
+              <label for="dbIdInput">Spreadsheet ID</label>
+            </div>
+          </div>
+        </div>
+
+        <div id="dbValidationProgressContainer" class="d-none mt-3">
+           <p class="text-muted small mb-1 fw-bold" id="dbValidationProgressText">Memvalidasi koneksi...</p>
+           <div class="progress rounded-pill" style="height: 10px;">
+             <div class="progress-bar progress-bar-striped progress-bar-animated bg-primary" role="progressbar" id="dbValidationProgressBar" style="width: 100%"></div>
+           </div>
+        </div>
+      </div>
+      <div class="modal-footer border-top-0 pt-0 pb-4 px-4">
+        <button type="button" class="btn btn-light rounded-3 fw-medium" data-bs-dismiss="modal">Batal</button>
+        <button type="button" class="btn btn-primary rounded-3 px-4 fw-medium shadow-sm" id="btnConnectDb" onclick="connectDatabase()">
+          <i class="fas fa-plug me-2"></i> Tautkan Spreadsheet
+        </button>
+      </div>
+    </div>
+  </div>
+</div>

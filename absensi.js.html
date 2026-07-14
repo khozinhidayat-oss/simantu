@@ -1,0 +1,211 @@
+<script>
+    var currentJadwalAbsenList = [];
+    var currentSiswaAbsenList = [];
+
+    function initAbsensi() {
+        // Reset form
+        if(document.getElementById('selectJadwalAbsen')) if(document.getElementById('selectJadwalAbsen')) if(document.getElementById('selectJadwalAbsen')) document.getElementById('selectJadwalAbsen').innerHTML = '<option value="">-- Pilih Jadwal Mengajar --</option>';
+        if(document.getElementById('cardDaftarSiswa')) if(document.getElementById('cardDaftarSiswa')) if(document.getElementById('cardDaftarSiswa')) document.getElementById('cardDaftarSiswa').style.display = 'none';
+        if(document.getElementById('infoMapel')) if(document.getElementById('infoMapel')) if(document.getElementById('infoMapel')) document.getElementById('infoMapel').textContent = '-';
+        if(document.getElementById('infoKelas')) if(document.getElementById('infoKelas')) if(document.getElementById('infoKelas')) document.getElementById('infoKelas').textContent = '-';
+        if(document.getElementById('infoWaktu')) if(document.getElementById('infoWaktu')) if(document.getElementById('infoWaktu')) document.getElementById('infoWaktu').textContent = '-';
+
+        showLoading('Memuat Jadwal...');
+        
+        if(typeof google !== 'undefined' && google.script) {
+            google.script.run
+                .withSuccessHandler((res) => {
+                    hideLoading();
+                    if(res.success) {
+                        currentJadwalAbsenList = res.data;
+                        renderSelectJadwal();
+                    } else {
+                        showAlert('Error', res.message, 'error');
+                    }
+                })
+                .getJadwalHariIniForAbsensi(currentUser ? currentUser.email : '');
+        } else {
+            // Dummy Data
+            setTimeout(() => {
+                hideLoading();
+                currentJadwalAbsenList = [
+                    { id: 'J01', mapel: 'Matematika Peminatan', kelas: 'XII MIPA 1', jam: '07:30 - 09:00', semester: 'Ganjil' },
+                    { id: 'J02', mapel: 'Matematika Peminatan', kelas: 'XII MIPA 2', jam: '09:00 - 10:30', semester: 'Ganjil' }
+                ];
+                renderSelectJadwal();
+            }, 500);
+        }
+    }
+
+    function renderSelectJadwal() {
+        const select = document.getElementById('selectJadwalAbsen');
+        let options = '<option value="">-- Pilih Jadwal Mengajar --</option>';
+        currentJadwalAbsenList.forEach(j => {
+            options += `<option value="${j.id}">${j.kelas} | ${j.mapel} (${j.jam})</option>`;
+        });
+        select.innerHTML = options;
+    }
+
+    function handleJadwalChange() {
+        const select = document.getElementById('selectJadwalAbsen');
+        const id = select.value;
+        
+        if(!id) {
+            if(document.getElementById('cardDaftarSiswa')) if(document.getElementById('cardDaftarSiswa')) if(document.getElementById('cardDaftarSiswa')) document.getElementById('cardDaftarSiswa').style.display = 'none';
+            if(document.getElementById('infoMapel')) if(document.getElementById('infoMapel')) if(document.getElementById('infoMapel')) document.getElementById('infoMapel').textContent = '-';
+            if(document.getElementById('infoKelas')) if(document.getElementById('infoKelas')) if(document.getElementById('infoKelas')) document.getElementById('infoKelas').textContent = '-';
+            if(document.getElementById('infoWaktu')) if(document.getElementById('infoWaktu')) if(document.getElementById('infoWaktu')) document.getElementById('infoWaktu').textContent = '-';
+            return;
+        }
+
+        const jadwal = currentJadwalAbsenList.find(j => j.id === id);
+        if(jadwal) {
+            if(document.getElementById('infoMapel')) if(document.getElementById('infoMapel')) if(document.getElementById('infoMapel')) document.getElementById('infoMapel').textContent = jadwal.mapel;
+            if(document.getElementById('infoKelas')) if(document.getElementById('infoKelas')) if(document.getElementById('infoKelas')) document.getElementById('infoKelas').textContent = `${jadwal.kelas} / ${jadwal.semester}`;
+            const tglStr = new Date().toLocaleDateString('id-ID', {day:'numeric', month:'short', year:'numeric'});
+            if(document.getElementById('infoWaktu')) if(document.getElementById('infoWaktu')) if(document.getElementById('infoWaktu')) document.getElementById('infoWaktu').textContent = `${jadwal.jam} | ${tglStr}`;
+            
+            loadSiswaForAbsensi(jadwal.id);
+        }
+    }
+
+    function loadSiswaForAbsensi(jadwalId) {
+        showLoading('Memuat Data Siswa...');
+        if(typeof google !== 'undefined' && google.script) {
+            google.script.run
+                .withSuccessHandler((res) => {
+                    hideLoading();
+                    if(res.success) {
+                        currentSiswaAbsenList = res.data;
+                        renderTabelAbsen();
+                    } else {
+                        showAlert('Error', res.message, 'error');
+                    }
+                })
+                .getSiswaForAbsensi(jadwalId);
+        } else {
+            setTimeout(() => {
+                hideLoading();
+                currentSiswaAbsenList = [
+                    { id: 'S01', nis: '2023001', nama: 'Adi Putra', jk: 'L' },
+                    { id: 'S02', nis: '2023002', nama: 'Budi Santoso', jk: 'L' },
+                    { id: 'S03', nis: '2023003', nama: 'Citra Lestari', jk: 'P' },
+                    { id: 'S04', nis: '2023004', nama: 'Dewi Ayu', jk: 'P' }
+                ];
+                renderTabelAbsen();
+            }, 500);
+        }
+    }
+
+    function renderTabelAbsen() {
+        if(document.getElementById('cardDaftarSiswa')) if(document.getElementById('cardDaftarSiswa')) if(document.getElementById('cardDaftarSiswa')) document.getElementById('cardDaftarSiswa').style.display = 'block';
+        const tbody = document.getElementById('absenTableBody');
+        let html = '';
+
+        if(currentSiswaAbsenList.length === 0) {
+            html = `<tr><td colspan="6" class="text-center text-muted py-5"><i class="fas fa-users-slash fs-3 mb-2 d-block"></i>Tidak ada data siswa di kelas ini.</td></tr>`;
+        } else {
+            currentSiswaAbsenList.forEach((siswa, index) => {
+                // Konfigurasi Status
+                const statuses = [
+                    { val: 'Hadir', label: 'H', color: 'success' },
+                    { val: 'Izin', label: 'I', color: 'info' },
+                    { val: 'Sakit', label: 'S', color: 'warning' },
+                    { val: 'Alpha', label: 'A', color: 'danger' },
+                    { val: 'Terlambat', label: 'T', color: 'secondary' }
+                ];
+                
+                let radioHtml = `<div class="d-flex gap-2">`;
+                statuses.forEach(st => {
+                    const idRadio = `status_${siswa.id}_${st.val}`;
+                    const checked = st.val === 'Hadir' ? 'checked' : '';
+                    radioHtml += `
+                        <div class="form-check form-check-inline m-0 p-0">
+                            <input type="radio" class="btn-check" name="status_${siswa.id}" id="${idRadio}" value="${st.val}" ${checked} autocomplete="off">
+                            <label class="btn btn-outline-${st.color} rounded-circle d-flex align-items-center justify-content-center fw-bold shadow-sm" for="${idRadio}" style="width:34px; height:34px; padding:0; font-size:13px;" title="${st.val}">${st.label}</label>
+                        </div>
+                    `;
+                });
+                radioHtml += `</div>`;
+
+                html += `
+                    <tr class="siswa-row">
+                        <td class="ps-4 text-muted">${index + 1}</td>
+                        <td class="font-monospace text-muted" style="font-size:13px;">${siswa.nis}</td>
+                        <td class="fw-bold text-dark siswa-nama">${siswa.nama}</td>
+                        <td class="text-center text-muted">${siswa.jk}</td>
+                        <td>${radioHtml}</td>
+                        <td class="pe-4">
+                            <input type="text" class="form-control bg-light border-0" id="catatan_${siswa.id}" placeholder="Opsional..." style="font-size:13px;">
+                        </td>
+                    </tr>
+                `;
+            });
+        }
+        tbody.innerHTML = html;
+    }
+
+    function filterAbsen() {
+        const input = document.getElementById('searchAbsen').value.toLowerCase();
+        const rows = document.querySelectorAll('.siswa-row');
+        rows.forEach(row => {
+            const name = row.querySelector('.siswa-nama').textContent.toLowerCase();
+            if(name.includes(input)) {
+                row.style.display = '';
+            } else {
+                row.style.display = 'none';
+            }
+        });
+    }
+
+    function simpanAbsensi() {
+        const jadwalId = document.getElementById('selectJadwalAbsen').value;
+        if(!jadwalId) {
+            showAlert('Peringatan', 'Pilih jadwal terlebih dahulu!', 'warning');
+            return;
+        }
+
+        const absenData = [];
+        currentSiswaAbsenList.forEach(siswa => {
+            const statusNode = document.querySelector(`input[name="status_${siswa.id}"]:checked`);
+            const status = statusNode ? statusNode.value : 'Hadir';
+            const catatan = document.getElementById(`catatan_${siswa.id}`).value;
+            absenData.push({
+                siswaId: siswa.id,
+                status: status,
+                catatan: catatan
+            });
+        });
+
+        const payload = {
+            jadwalId: jadwalId,
+            tanggal: new Date().toISOString(),
+            data: absenData
+        };
+
+        showLoading('Menyimpan Kehadiran...');
+
+        if(typeof google !== 'undefined' && google.script) {
+            google.script.run
+                .withSuccessHandler((res) => {
+                    hideLoading();
+                    if(res.success) {
+                        showAlert('Sukses', 'Data absensi berhasil disimpan.', 'success');
+                    } else {
+                        showAlert('Gagal', res.message, 'error');
+                    }
+                })
+                .withFailureHandler((err) => {
+                    hideLoading();
+                    showAlert('Kesalahan Server', err.message, 'error');
+                })
+                .saveAbsensiData(payload);
+        } else {
+            setTimeout(() => {
+                hideLoading();
+                showAlert('Berhasil', 'Data absensi berhasil disimpan (Preview Mode).', 'success');
+                console.log('Payload Absensi:', payload);
+            }, 800);
+        }
+    }
+</script>

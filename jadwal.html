@@ -1,0 +1,168 @@
+<div class="d-flex">
+    <div id="sidebar-container"></div>
+    
+    <div class="main-content flex-grow-1" id="main-wrapper">
+        <div id="navbar-container"></div>
+        
+        <div class="container-fluid p-4" style="margin-top: 60px;">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <div>
+                    <h3 class="fw-bold text-dark mb-1">Jadwal Mengajar</h3>
+                    <nav aria-label="breadcrumb">
+                        <ol class="breadcrumb mb-0">
+                            <li class="breadcrumb-item"><a href="#" onclick="loadPage('dashboard')" class="text-decoration-none">Dashboard</a></li>
+                            <li class="breadcrumb-item active" aria-current="page">Jadwal</li>
+                        </ol>
+                    </nav>
+                </div>
+                <button class="btn btn-primary rounded-3 shadow-sm px-4" onclick="showModalJadwal()">
+                    <i class="fas fa-plus me-2"></i>Tambah Jadwal
+                </button>
+            </div>
+
+            <div class="card border-0 shadow-sm rounded-4">
+                <div class="card-header bg-white border-bottom pt-4 pb-0 px-4">
+                    <ul class="nav nav-tabs border-bottom-0" id="jadwalTab" role="tablist">
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link active fw-medium pb-3" id="table-tab" data-bs-toggle="tab" data-bs-target="#tab-table" type="button" role="tab">
+                                <i class="fas fa-table me-2"></i>Tabel Jadwal
+                            </button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link fw-medium pb-3" id="timeline-tab" data-bs-toggle="tab" data-bs-target="#tab-timeline" type="button" role="tab">
+                                <i class="fas fa-stream me-2"></i>Timeline
+                            </button>
+                        </li>
+                    </ul>
+                </div>
+                
+                <div class="card-body p-0">
+                    <div class="tab-content" id="jadwalTabContent">
+                        
+                        <!-- VIEW TABLE -->
+                        <div class="tab-pane fade show active" id="tab-table" role="tabpanel">
+                            <div class="p-3 px-4 d-flex justify-content-between align-items-center bg-light bg-opacity-50 border-bottom">
+                                <div class="d-flex align-items-center gap-3">
+                                    <span class="text-muted small fw-medium">Filter:</span>
+                                    <select class="form-select form-select-sm bg-white shadow-sm border-0" id="filterHari" style="width: 150px;">
+                                        <option value="">Semua Hari</option>
+                                        <option value="Senin">Senin</option>
+                                        <option value="Selasa">Selasa</option>
+                                        <option value="Rabu">Rabu</option>
+                                        <option value="Kamis">Kamis</option>
+                                        <option value="Jumat">Jumat</option>
+                                    </select>
+                                </div>
+                                <span class="badge bg-primary bg-opacity-10 text-primary border border-primary border-opacity-25 px-3 py-2" id="infoHariIni"></span>
+                            </div>
+                            <div class="table-responsive">
+                                <table class="table table-hover align-middle mb-0" id="tableJadwal">
+                                    <thead class="table-light text-muted small text-uppercase">
+                                        <tr>
+                                            <th class="ps-4 py-3" width="5%">No</th>
+                                            <th class="py-3">Waktu</th>
+                                            <th class="py-3">Mata Pelajaran</th>
+                                            <th class="py-3">Kelas / Ruang</th>
+                                            <th class="py-3">Info Akademik</th>
+                                            <th class="pe-4 py-3 text-end">Aksi</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="jadwalTableBody" class="border-top-0">
+                                        <tr><td colspan="6" class="text-center py-4 text-muted"><i class="fas fa-spinner fa-spin me-2"></i>Memuat data jadwal...</td></tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                        
+                        <!-- VIEW TIMELINE -->
+                        <div class="tab-pane fade bg-light bg-opacity-50" id="tab-timeline" role="tabpanel">
+                            <div class="p-5">
+                                <div class="row justify-content-center">
+                                    <div class="col-lg-8" id="jadwalTimelineBody">
+                                        <div class="text-center text-muted"><i class="fas fa-spinner fa-spin me-2"></i>Memuat timeline...</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+            </div>
+            
+            <div id="footer-container" class="mt-4"></div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Form Jadwal -->
+<div class="modal fade" id="modalJadwal" tabindex="-1" aria-labelledby="modalJadwalLabel" aria-hidden="true" data-bs-backdrop="static">
+    <div class="modal-dialog modal-dialog-centered modal-lg modal-dialog-scrollable">
+        <div class="modal-content rounded-4 border-0 shadow">
+            <div class="modal-header border-bottom px-4 py-3">
+                <h5 class="modal-title fw-bold" id="modalJadwalLabel">Tambah Jadwal Baru</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body p-4 bg-light bg-opacity-50">
+                <form id="formJadwal">
+                    <input type="hidden" id="jadwalId">
+                    <div class="row g-4">
+                        <div class="col-md-6">
+                            <label class="form-label small fw-bold text-muted">Hari <span class="text-danger">*</span></label>
+                            <select class="form-select" id="jadwalHari" required>
+                                <option value="">Pilih Hari...</option>
+                                <option value="Senin">Senin</option>
+                                <option value="Selasa">Selasa</option>
+                                <option value="Rabu">Rabu</option>
+                                <option value="Kamis">Kamis</option>
+                                <option value="Jumat">Jumat</option>
+                                <option value="Sabtu">Sabtu</option>
+                                <option value="Minggu">Minggu</option>
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label small fw-bold text-muted">Jam Ke <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control" id="jadwalJamKe" required placeholder="Contoh: 1-2">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label small fw-bold text-muted">Jam Mulai <span class="text-danger">*</span></label>
+                            <input type="time" class="form-control" id="jadwalJamMulai" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label small fw-bold text-muted">Jam Selesai <span class="text-danger">*</span></label>
+                            <input type="time" class="form-control" id="jadwalJamSelesai" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label small fw-bold text-muted">Mata Pelajaran <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control" id="jadwalMapel" required placeholder="Contoh: Matematika Peminatan">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label small fw-bold text-muted">Kelas <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control" id="jadwalKelas" required placeholder="Contoh: XII MIPA 1">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label small fw-bold text-muted">Ruangan <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control" id="jadwalRuangan" required placeholder="Contoh: R. 201">
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label small fw-bold text-muted">Semester <span class="text-danger">*</span></label>
+                            <select class="form-select" id="jadwalSemester" required>
+                                <option value="Ganjil">Ganjil</option>
+                                <option value="Genap">Genap</option>
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label small fw-bold text-muted">Tahun Ajaran <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control" id="jadwalTahunAjaran" required placeholder="Contoh: 2023/2024">
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer border-top p-3 px-4 bg-white">
+                <button type="button" class="btn btn-light rounded-3 px-4" data-bs-dismiss="modal">Batal</button>
+                <button type="button" class="btn btn-primary rounded-3 px-4 shadow-sm" onclick="simpanJadwal()">
+                    <i class="fas fa-save me-2"></i>Simpan Jadwal
+                </button>
+            </div>
+        </div>
+    </div>
+</div>

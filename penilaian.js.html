@@ -1,0 +1,177 @@
+<script>
+    var currentSiswaNilaiList = [];
+    var currentKKM = 75;
+
+    function initPenilaian() {
+        if(document.getElementById('cardInputNilai')) if(document.getElementById('cardInputNilai')) if(document.getElementById('cardInputNilai')) document.getElementById('cardInputNilai').style.display = 'none';
+        document.getElementById('formFilterPenilaian').reset();
+    }
+
+    function loadSiswaPenilaian(e) {
+        e.preventDefault();
+        
+        const kelas = document.getElementById('filterKelasNilai').value;
+        const mapel = document.getElementById('filterMapelNilai').value;
+        const jenis = document.getElementById('filterJenisNilai').value;
+
+        if(document.getElementById('infoPenilaianText')) if(document.getElementById('infoPenilaianText')) if(document.getElementById('infoPenilaianText')) document.getElementById('infoPenilaianText').textContent = `${kelas} | ${mapel} | ${jenis}`;
+        
+        showLoading('Menyiapkan Format Penilaian...');
+
+        const filter = { kelas: kelas, mapel: mapel, jenis: jenis };
+
+        if(typeof google !== 'undefined' && google.script) {
+            google.script.run
+                .withSuccessHandler((res) => {
+                    hideLoading();
+                    if(res.success) {
+                        currentSiswaNilaiList = res.data;
+                        currentKKM = res.kkm || 75;
+                        renderTabelPenilaian();
+                    } else {
+                        showAlert('Error', res.message, 'error');
+                    }
+                })
+                .getSiswaForPenilaian(filter);
+        } else {
+            // Dummy Data
+            setTimeout(() => {
+                hideLoading();
+                currentSiswaNilaiList = [
+                    { id: 'S01', nis: '2023001', nama: 'Adi Putra', nilai: null },
+                    { id: 'S02', nis: '2023002', nama: 'Budi Santoso', nilai: 85 },
+                    { id: 'S03', nis: '2023003', nama: 'Citra Lestari', nilai: 90 },
+                    { id: 'S04', nis: '2023004', nama: 'Dewi Ayu', nilai: 60 }
+                ];
+                currentKKM = 75;
+                renderTabelPenilaian();
+            }, 600);
+        }
+    }
+
+    function renderTabelPenilaian() {
+        if(document.getElementById('cardInputNilai')) if(document.getElementById('cardInputNilai')) if(document.getElementById('cardInputNilai')) document.getElementById('cardInputNilai').style.display = 'block';
+        if(document.getElementById('infoKKM')) if(document.getElementById('infoKKM')) if(document.getElementById('infoKKM')) document.getElementById('infoKKM').textContent = currentKKM;
+
+        const tbody = document.getElementById('penilaianTableBody');
+        let html = '';
+
+        if(currentSiswaNilaiList.length === 0) {
+            html = `<tr><td colspan="5" class="text-center text-muted py-5">Tidak ada data siswa untuk kelas ini.</td></tr>`;
+        } else {
+            currentSiswaNilaiList.forEach((siswa, index) => {
+                const val = siswa.nilai !== null ? siswa.nilai : '';
+                // Cek warna text-danger jika di bawah KKM dan bukan kosong
+                let inputClass = 'form-control text-center fw-bold';
+                let textClass = '';
+                if(val !== '' && val < currentKKM) {
+                    inputClass += ' text-danger border-danger bg-danger bg-opacity-10';
+                    textClass = 'text-danger fw-bold';
+                }
+
+                html += `
+                    <tr>
+                        <td class="ps-4 text-muted">${index + 1}</td>
+                        <td class="font-monospace text-muted" style="font-size:13px;">${siswa.nis}</td>
+                        <td class="fw-bold text-dark">${siswa.nama}</td>
+                        <td class="text-center px-4">
+                            <input type="number" class="${inputClass}" id="nilai_${siswa.id}" value="${val}" min="0" max="100" onkeyup="checkKKM(this)" onchange="checkKKM(this)">
+                        </td>
+                        <td class="pe-4">
+                            <span id="ket_${siswa.id}" class="small ${textClass}">
+                                ${val !== '' ? (val < currentKKM ? 'Belum Tuntas' : 'Tuntas') : ''}
+                            </span>
+                        </td>
+                    </tr>
+                `;
+            });
+        }
+        tbody.innerHTML = html;
+    }
+
+    function checkKKM(inputEl) {
+        const val = inputEl.value;
+        const idParts = inputEl.id.split('_');
+        const siswaId = idParts[1];
+        const ketEl = document.getElementById(`ket_${siswaId}`);
+
+        inputEl.classList.remove('text-danger', 'border-danger', 'bg-danger', 'bg-opacity-10');
+        ketEl.className = 'small';
+        ketEl.textContent = '';
+
+        if(val !== '') {
+            const num = parseFloat(val);
+            if(num < currentKKM) {
+                inputEl.classList.add('text-danger', 'border-danger', 'bg-danger', 'bg-opacity-10');
+                ketEl.className = 'small text-danger fw-bold';
+                ketEl.textContent = 'Belum Tuntas';
+            } else {
+                ketEl.className = 'small text-success fw-medium';
+                ketEl.textContent = 'Tuntas';
+            }
+        }
+    }
+
+    function simpanPenilaian() {
+        const kelas = document.getElementById('filterKelasNilai').value;
+        const mapel = document.getElementById('filterMapelNilai').value;
+        const jenis = document.getElementById('filterJenisNilai').value;
+
+        const dataNilai = [];
+        let hasEmpty = false;
+
+        currentSiswaNilaiList.forEach(siswa => {
+            const val = document.getElementById(`nilai_${siswa.id}`).value;
+            if(val === '') hasEmpty = true;
+            dataNilai.push({
+                siswaId: siswa.id,
+                nilai: val !== '' ? parseFloat(val) : null
+            });
+        });
+
+        if(hasEmpty) {
+            Swal.fire({
+                title: 'Ada Nilai Kosong',
+                text: 'Beberapa siswa belum memiliki nilai. Lanjutkan menyimpan?',
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonText: 'Ya, Simpan',
+                cancelButtonText: 'Batal'
+            }).then((res) => {
+                if(res.isConfirmed) executeSimpanNilai(kelas, mapel, jenis, dataNilai);
+            });
+        } else {
+            executeSimpanNilai(kelas, mapel, jenis, dataNilai);
+        }
+    }
+
+    function executeSimpanNilai(kelas, mapel, jenis, dataNilai) {
+        const payload = {
+            kelas: kelas,
+            mapel: mapel,
+            jenis: jenis,
+            data: dataNilai
+        };
+
+        showLoading('Menyimpan Nilai...');
+
+        if(typeof google !== 'undefined' && google.script) {
+            google.script.run
+                .withSuccessHandler((res) => {
+                    hideLoading();
+                    if(res.success) {
+                        showAlert('Sukses', res.message, 'success');
+                    } else {
+                        showAlert('Gagal', res.message, 'error');
+                    }
+                })
+                .savePenilaian(payload);
+        } else {
+            setTimeout(() => {
+                hideLoading();
+                showAlert('Berhasil', 'Data nilai berhasil disimpan (Preview Mode).', 'success');
+                console.log('Payload Penilaian:', payload);
+            }, 600);
+        }
+    }
+</script>

@@ -1,0 +1,111 @@
+<div class="d-flex">
+    <div id="sidebar-container"></div>
+    
+    <div class="main-content flex-grow-1" id="main-wrapper">
+        <div id="navbar-container"></div>
+        
+        <div class="container-fluid p-4" style="margin-top: 60px;">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <div>
+                    <h3 class="fw-bold text-dark mb-1">Data Kelas</h3>
+                    <nav aria-label="breadcrumb">
+                        <ol class="breadcrumb mb-0">
+                            <li class="breadcrumb-item"><a href="#" onclick="loadPage('dashboard')" class="text-decoration-none">Dashboard</a></li>
+                            <li class="breadcrumb-item active" aria-current="page">Data Kelas</li>
+                        </ol>
+                    </nav>
+                </div>
+                <button class="btn btn-primary rounded-3 shadow-sm px-4" onclick="showModalKelas()">
+                    <i class="fas fa-plus me-2"></i>Tambah Kelas
+                </button>
+            </div>
+
+            <div class="card border-0 shadow-sm rounded-4">
+                <div class="card-header bg-white border-bottom pt-4 pb-3 px-4 d-flex justify-content-between align-items-center">
+                    <h5 class="fw-bold mb-0">Daftar Kelas</h5>
+                    <div class="input-group" style="width: 250px;">
+                        <span class="input-group-text bg-light border-end-0"><i class="fas fa-search text-muted"></i></span>
+                        <input type="text" class="form-control bg-light border-start-0 ps-0" id="searchKelas" placeholder="Cari kelas...">
+                    </div>
+                </div>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle mb-0" id="tableKelas">
+                            <thead class="table-light text-muted small text-uppercase">
+                                <tr>
+                                    <th class="ps-4 py-3" width="5%">No</th>
+                                    <th class="py-3">Kode Kelas</th>
+                                    <th class="py-3">Nama Kelas</th>
+                                    <th class="py-3">Jurusan / Tingkat</th>
+                                    <th class="py-3">Jumlah Siswa</th>
+                                    <th class="pe-4 py-3 text-end">Aksi</th>
+                                </tr>
+                            </thead>
+                            <tbody id="kelasTableBody" class="border-top-0">
+                                <tr><td colspan="6" class="text-center py-4 text-muted"><i class="fas fa-spinner fa-spin me-2"></i>Memuat data...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+            
+            <div id="footer-container" class="mt-4"></div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Form Kelas -->
+<div class="modal fade" id="modalKelas" tabindex="-1" aria-labelledby="modalKelasLabel" aria-hidden="true" data-bs-backdrop="static">
+    <div class="modal-dialog modal-dialog-centered modal-lg modal-dialog-scrollable">
+        <div class="modal-content rounded-4 border-0 shadow">
+            <div class="modal-header border-bottom px-4 py-3">
+                <h5 class="modal-title fw-bold" id="modalKelasLabel">Tambah Kelas Baru</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body p-4 bg-light bg-opacity-50">
+                <form id="formKelas">
+                    <input type="hidden" id="kelasId">
+                    <div class="row g-4">
+                        <div class="col-md-6">
+                            <label class="form-label small fw-bold text-muted">Kode Kelas <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control" id="kelasKode" required placeholder="Contoh: X-IPA-1">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label small fw-bold text-muted">Nama Kelas <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control" id="kelasNama" required placeholder="Contoh: X IPA 1">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label small fw-bold text-muted">Jurusan <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control" id="kelasJurusan" required placeholder="Contoh: MIPA">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label small fw-bold text-muted">Tingkat <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control" id="kelasTingkat" required placeholder="Contoh: X">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label small fw-bold text-muted">Jumlah Siswa <span class="text-danger">*</span></label>
+                            <input type="number" class="form-control" id="kelasJml" required min="0" placeholder="Contoh: 32">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label small fw-bold text-muted">Wali Kelas <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control" id="kelasWali" required placeholder="Contoh: Ahmad Guru, S.Pd">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label small fw-bold text-muted">Status <span class="text-danger">*</span></label>
+                            <select class="form-select" id="kelasStatus" required>
+                                <option value="Aktif">Aktif</option>
+                                <option value="Tidak Aktif">Tidak Aktif</option>
+                            </select>
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer border-top p-3 px-4 bg-white">
+                <button type="button" class="btn btn-light rounded-3 px-4" data-bs-dismiss="modal">Batal</button>
+                <button type="button" class="btn btn-primary rounded-3 px-4 shadow-sm" onclick="simpanKelas()">
+                    <i class="fas fa-save me-2"></i>Simpan Kelas
+                </button>
+            </div>
+        </div>
+    </div>
+</div>

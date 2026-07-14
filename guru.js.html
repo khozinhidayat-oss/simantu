@@ -1,0 +1,210 @@
+<script>
+    var currentGuruData = [];
+
+    function initGuru() {
+        showLoading('Memuat Guru...');
+        if(typeof google !== 'undefined' && google.script) {
+            google.script.run
+                .withSuccessHandler((res) => {
+                    hideLoading();
+                    if(res.success) {
+                        currentGuruData = res.data;
+                        renderTableGuru();
+                    } else {
+                        if(document.getElementById('guruTableBody')) if(document.getElementById('guruTableBody')) if(document.getElementById('guruTableBody')) document.getElementById('guruTableBody').innerHTML = `<tr><td colspan="6" class="text-center text-danger py-4">${res.message}</td></tr>`;
+                    }
+                })
+                .withFailureHandler(err => {
+                    hideLoading();
+                    if(document.getElementById('guruTableBody')) if(document.getElementById('guruTableBody')) if(document.getElementById('guruTableBody')) document.getElementById('guruTableBody').innerHTML = `<tr><td colspan="6" class="text-center text-danger py-4">${err.message}</td></tr>`;
+                })
+                .getGuruData();
+        } else {
+            // Dummy Data
+            setTimeout(() => {
+                hideLoading();
+                currentGuruData = [
+                    { id: 'G01', nip: '198501012010011001', nama: 'Ahmad Guru, S.Pd', jk: 'L', email: 'ahmad@sekolah.com', nohp: '081234567890', status: 'Aktif' },
+                    { id: 'G02', nip: '199002022015022002', nama: 'Siti Aminah, M.Pd', jk: 'P', email: 'siti@sekolah.com', nohp: '081298765432', status: 'Aktif' },
+                    { id: 'G03', nip: '198803032012031003', nama: 'Budi Santoso, S.Pd', jk: 'L', email: 'budi@sekolah.com', nohp: '081211223344', status: 'Cuti' }
+                ];
+                renderTableGuru();
+            }, 500);
+        }
+
+        document.getElementById('searchGuru').addEventListener('keyup', renderTableGuru);
+    }
+
+    function renderTableGuru() {
+        const tbody = document.getElementById('guruTableBody');
+        const totalText = document.getElementById('guruTotalData');
+        const searchGuru = document.getElementById('searchGuru').value.toLowerCase();
+        
+        let html = '';
+        let filtered = currentGuruData;
+
+        if (searchGuru) {
+            filtered = filtered.filter(g => g.nama.toLowerCase().includes(searchGuru) || g.nip.includes(searchGuru));
+        }
+        
+        if(filtered.length === 0) {
+            html = `<tr><td colspan="6" class="text-center text-muted py-4">Tidak ada data guru yang sesuai.</td></tr>`;
+        } else {
+            filtered.forEach((item, index) => {
+                let badgeClass = item.status === 'Aktif' ? 'bg-success' : 'bg-secondary';
+                html += `
+                    <tr>
+                        <td class="ps-4 text-muted">${index + 1}</td>
+                        <td>
+                            <div class="d-flex align-items-center">
+                                <img src="https://ui-avatars.com/api/?name=${encodeURIComponent(item.nama)}&background=random&color=fff" class="rounded-circle me-3" width="35" height="35">
+                                <div>
+                                    <div class="fw-bold text-dark">${item.nama}</div>
+                                    <div class="text-muted" style="font-size: 12px;">${item.jk === 'L' ? 'Laki-laki' : 'Perempuan'}</div>
+                                </div>
+                            </div>
+                        </td>
+                        <td class="font-monospace text-muted">${item.nip}</td>
+                        <td>
+                            <div style="font-size: 13px;"><i class="fas fa-envelope text-muted me-1"></i> ${item.email}</div>
+                            <div style="font-size: 13px;"><i class="fas fa-phone text-muted me-1"></i> ${item.nohp}</div>
+                        </td>
+                        <td><span class="badge ${badgeClass} bg-opacity-10 text-${item.status === 'Aktif' ? 'success' : 'secondary'} border border-${item.status === 'Aktif' ? 'success' : 'secondary'} border-opacity-25 px-2 py-1">${item.status}</span></td>
+                        <td class="pe-4 text-end">
+                            <div class="d-flex justify-content-end gap-1">
+                                <button class="btn btn-sm btn-light border text-primary" onclick="editGuru('${item.id}')" title="Edit">
+                                    <i class="fas fa-edit"></i>
+                                </button>
+                                <button class="btn btn-sm btn-light border text-danger" onclick="hapusGuru('${item.id}')" title="Hapus">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                `;
+            });
+        }
+        
+        tbody.innerHTML = html;
+        if(totalText) totalText.textContent = `Menampilkan ${filtered.length} data`;
+    }
+
+    var modalGuruInstance = null;
+
+    function showModalGuru() {
+        document.getElementById('formGuru').reset();
+        if(document.getElementById('guruId')) if(document.getElementById('guruId')) if(document.getElementById('guruId')) document.getElementById('guruId').value = '';
+        if(document.getElementById('modalGuruLabel')) if(document.getElementById('modalGuruLabel')) if(document.getElementById('modalGuruLabel')) document.getElementById('modalGuruLabel').textContent = 'Tambah Guru Baru';
+        
+        if(!modalGuruInstance) {
+            modalGuruInstance = new bootstrap.Modal(document.getElementById('modalGuru'));
+        }
+        modalGuruInstance.show();
+    }
+
+    function editGuru(id) {
+        const guru = currentGuruData.find(g => g.id === id);
+        if(!guru) return;
+
+        if(document.getElementById('guruId')) if(document.getElementById('guruId')) if(document.getElementById('guruId')) document.getElementById('guruId').value = guru.id;
+        if(document.getElementById('guruNip')) if(document.getElementById('guruNip')) if(document.getElementById('guruNip')) document.getElementById('guruNip').value = guru.nip;
+        if(document.getElementById('guruNama')) if(document.getElementById('guruNama')) if(document.getElementById('guruNama')) document.getElementById('guruNama').value = guru.nama;
+        if(document.getElementById('guruJk')) if(document.getElementById('guruJk')) if(document.getElementById('guruJk')) document.getElementById('guruJk').value = guru.jk;
+        if(document.getElementById('guruStatus')) if(document.getElementById('guruStatus')) if(document.getElementById('guruStatus')) document.getElementById('guruStatus').value = guru.status;
+        if(document.getElementById('guruEmail')) if(document.getElementById('guruEmail')) if(document.getElementById('guruEmail')) document.getElementById('guruEmail').value = guru.email;
+        if(document.getElementById('guruNohp')) if(document.getElementById('guruNohp')) if(document.getElementById('guruNohp')) document.getElementById('guruNohp').value = guru.nohp;
+
+        if(document.getElementById('modalGuruLabel')) if(document.getElementById('modalGuruLabel')) if(document.getElementById('modalGuruLabel')) document.getElementById('modalGuruLabel').textContent = 'Edit Guru';
+        
+        if(!modalGuruInstance) {
+            modalGuruInstance = new bootstrap.Modal(document.getElementById('modalGuru'));
+        }
+        modalGuruInstance.show();
+    }
+
+    function simpanGuru() {
+        const form = document.getElementById('formGuru');
+        if(!form.checkValidity()) {
+            form.reportValidity();
+            return;
+        }
+
+        const id = document.getElementById('guruId').value;
+        const payload = {
+            id: id || 'G' + new Date().getTime(),
+            nip: document.getElementById('guruNip').value,
+            nama: document.getElementById('guruNama').value,
+            jk: document.getElementById('guruJk').value,
+            status: document.getElementById('guruStatus').value,
+            email: document.getElementById('guruEmail').value,
+            nohp: document.getElementById('guruNohp').value
+        };
+
+        modalGuruInstance.hide();
+        showLoading('Menyimpan Guru...');
+
+        if(typeof google !== 'undefined' && google.script) {
+            google.script.run
+                .withSuccessHandler((res) => {
+                    hideLoading();
+                    if(res.success) {
+                        showAlert('Sukses', res.message, 'success');
+                        initGuru();
+                    } else {
+                        showAlert('Gagal', res.message, 'error');
+                    }
+                })
+                .saveGuru(payload);
+        } else {
+            setTimeout(() => {
+                hideLoading();
+                if(id) {
+                    const idx = currentGuruData.findIndex(g => g.id === id);
+                    if(idx !== -1) currentGuruData[idx] = payload;
+                } else {
+                    currentGuruData.push(payload);
+                }
+                renderTableGuru();
+                showAlert('Berhasil', 'Guru berhasil disimpan (Preview Mode).', 'success');
+            }, 600);
+        }
+    }
+
+    function hapusGuru(id) {
+        Swal.fire({
+            title: 'Hapus Guru?',
+            text: "Data guru yang dihapus tidak dapat dikembalikan!",
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#dc3545',
+            cancelButtonColor: '#6c757d',
+            confirmButtonText: 'Ya, Hapus!',
+            cancelButtonText: 'Batal',
+            reverseButtons: true
+        }).then((result) => {
+            if (result.isConfirmed) {
+                showLoading('Menghapus...');
+                if(typeof google !== 'undefined' && google.script) {
+                    google.script.run
+                        .withSuccessHandler((res) => {
+                            hideLoading();
+                            if(res.success) {
+                                showAlert('Terhapus', res.message, 'success');
+                                initGuru();
+                            } else {
+                                showAlert('Gagal', res.message, 'error');
+                            }
+                        })
+                        .deleteGuru(id);
+                } else {
+                    setTimeout(() => {
+                        hideLoading();
+                        currentGuruData = currentGuruData.filter(g => g.id !== id);
+                        renderTableGuru();
+                        showAlert('Terhapus', 'Guru berhasil dihapus (Preview Mode).', 'success');
+                    }, 600);
+                }
+            }
+        });
+    }
+</script>

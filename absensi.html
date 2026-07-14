@@ -1,0 +1,103 @@
+<div class="d-flex">
+    <div id="sidebar-container"></div>
+    
+    <div class="main-content flex-grow-1" id="main-wrapper">
+        <div id="navbar-container"></div>
+        
+        <div class="container-fluid p-4" style="margin-top: 60px;">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <div>
+                    <h3 class="fw-bold text-dark mb-1">Absensi Siswa</h3>
+                    <nav aria-label="breadcrumb">
+                        <ol class="breadcrumb mb-0">
+                            <li class="breadcrumb-item"><a href="#" onclick="loadPage('dashboard')" class="text-decoration-none">Dashboard</a></li>
+                            <li class="breadcrumb-item active" aria-current="page">Absensi</li>
+                        </ol>
+                    </nav>
+                </div>
+                <div class="d-flex gap-2">
+                    <button class="btn btn-outline-secondary rounded-3 bg-white" onclick="showAlert('Info', 'Fitur Cetak PDF akan tersedia pada versi production.', 'info')">
+                        <i class="fas fa-file-pdf text-danger me-2"></i>Cetak PDF
+                    </button>
+                    <button class="btn btn-outline-secondary rounded-3 bg-white" onclick="showAlert('Info', 'Fitur Export Excel akan tersedia pada versi production.', 'info')">
+                        <i class="fas fa-file-excel text-success me-2"></i>Export Excel
+                    </button>
+                </div>
+            </div>
+
+            <!-- Form Pilih Jadwal & Info -->
+            <div class="card border-0 shadow-sm rounded-4 mb-4">
+                <div class="card-body p-4">
+                    <div class="row g-4 align-items-center">
+                        <div class="col-md-4 border-end-md">
+                            <label class="form-label text-muted small fw-bold text-uppercase tracking-tight">Pilih Jadwal Mengajar</label>
+                            <select class="form-select bg-light border-0 shadow-none" id="selectJadwalAbsen" onchange="handleJadwalChange()">
+                                <option value="">-- Pilih Jadwal --</option>
+                            </select>
+                        </div>
+                        <div class="col-md-8">
+                            <div class="row bg-light bg-opacity-50 rounded-4 p-3 ms-md-1 h-100 align-items-center">
+                                <div class="col-md-4 mb-3 mb-md-0 border-end-md">
+                                    <div class="text-muted small mb-1"><i class="fas fa-book-open me-1"></i>Mata Pelajaran</div>
+                                    <div class="fw-bold text-dark" id="infoMapel">-</div>
+                                </div>
+                                <div class="col-md-4 mb-3 mb-md-0 border-end-md">
+                                    <div class="text-muted small mb-1"><i class="fas fa-chalkboard me-1"></i>Kelas / Semester</div>
+                                    <div class="fw-bold text-dark" id="infoKelas">-</div>
+                                </div>
+                                <div class="col-md-4">
+                                    <div class="text-muted small mb-1"><i class="far fa-clock me-1"></i>Jam / Tanggal</div>
+                                    <div class="fw-bold text-dark font-monospace" id="infoWaktu">-</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Tabel Daftar Siswa -->
+            <div class="card border-0 shadow-sm rounded-4" id="cardDaftarSiswa" style="display:none;">
+                <div class="card-header bg-white border-bottom pt-4 pb-3 px-4 d-flex justify-content-between align-items-center">
+                    <h5 class="fw-bold mb-0">Daftar Kehadiran Siswa</h5>
+                    <div class="input-group" style="width: 250px;">
+                        <span class="input-group-text bg-light border-end-0"><i class="fas fa-search text-muted"></i></span>
+                        <input type="text" class="form-control bg-light border-start-0 ps-0" id="searchAbsen" placeholder="Cari nama siswa..." onkeyup="filterAbsen()">
+                    </div>
+                </div>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle mb-0" id="tableAbsen">
+                            <thead class="table-light text-muted small text-uppercase">
+                                <tr>
+                                    <th class="ps-4 py-3" width="5%">No</th>
+                                    <th class="py-3" width="12%">NIS</th>
+                                    <th class="py-3" width="23%">Nama Siswa</th>
+                                    <th class="py-3 text-center" width="5%">JK</th>
+                                    <th class="py-3" width="35%">Status Kehadiran</th>
+                                    <th class="pe-4 py-3" width="20%">Catatan Guru</th>
+                                </tr>
+                            </thead>
+                            <tbody id="absenTableBody" class="border-top-0">
+                                <!-- Data injected via JS -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                <div class="card-footer bg-light border-top py-4 px-4 d-flex justify-content-between align-items-center rounded-bottom-4">
+                    <div class="d-flex gap-3 text-muted small">
+                        <span><i class="fas fa-circle text-success me-1"></i>Hadir</span>
+                        <span><i class="fas fa-circle text-info me-1"></i>Izin</span>
+                        <span><i class="fas fa-circle text-warning me-1"></i>Sakit</span>
+                        <span><i class="fas fa-circle text-danger me-1"></i>Alpha</span>
+                        <span><i class="fas fa-circle text-secondary me-1"></i>Terlambat</span>
+                    </div>
+                    <button class="btn btn-primary rounded-3 px-4 shadow-sm" onclick="simpanAbsensi()">
+                        <i class="fas fa-save me-2"></i>Simpan Kehadiran
+                    </button>
+                </div>
+            </div>
+
+            <div id="footer-container" class="mt-4"></div>
+        </div>
+    </div>
+</div>

@@ -1,0 +1,206 @@
+<script>
+    var currentKelasData = [];
+
+    function initKelas() {
+        showLoading('Memuat Kelas...');
+        if(typeof google !== 'undefined' && google.script) {
+            google.script.run
+                .withSuccessHandler((res) => {
+                    hideLoading();
+                    if(res.success) {
+                        currentKelasData = res.data;
+                        renderTableKelas();
+                    } else {
+                        if(document.getElementById('kelasTableBody')) if(document.getElementById('kelasTableBody')) if(document.getElementById('kelasTableBody')) document.getElementById('kelasTableBody').innerHTML = `<tr><td colspan="6" class="text-center text-danger py-4">${res.message}</td></tr>`;
+                    }
+                })
+                .withFailureHandler(err => {
+                    hideLoading();
+                    if(document.getElementById('kelasTableBody')) if(document.getElementById('kelasTableBody')) if(document.getElementById('kelasTableBody')) document.getElementById('kelasTableBody').innerHTML = `<tr><td colspan="6" class="text-center text-danger py-4">${err.message}</td></tr>`;
+                })
+                .getKelasData();
+        } else {
+            setTimeout(() => {
+                hideLoading();
+                currentKelasData = [
+                    { id: 'K01', kode: 'X-IPA-1', nama: 'X IPA 1', jurusan: 'MIPA', tingkat: 'X', jml: 32, wali: 'Ahmad Guru, S.Pd', status: 'Aktif' },
+                    { id: 'K02', kode: 'X-IPA-2', nama: 'X IPA 2', jurusan: 'MIPA', tingkat: 'X', jml: 30, wali: 'Siti Aminah, M.Pd', status: 'Aktif' },
+                    { id: 'K03', kode: 'XI-IPS-1', nama: 'XI IPS 1', jurusan: 'IPS', tingkat: 'XI', jml: 34, wali: 'Budi Santoso, S.Pd', status: 'Aktif' }
+                ];
+                renderTableKelas();
+            }, 500);
+        }
+
+        // Setup filter listener
+        document.getElementById('searchKelas').addEventListener('keyup', renderTableKelas);
+    }
+
+    function renderTableKelas() {
+        const tbody = document.getElementById('kelasTableBody');
+        const searchKelas = document.getElementById('searchKelas').value.toLowerCase();
+        
+        let html = '';
+        let filtered = currentKelasData;
+
+        if (searchKelas) {
+            filtered = filtered.filter(k => k.nama.toLowerCase().includes(searchKelas) || k.kode.toLowerCase().includes(searchKelas) || k.wali.toLowerCase().includes(searchKelas));
+        }
+        
+        if(filtered.length === 0) {
+            html = `<tr><td colspan="6" class="text-center text-muted py-4">Tidak ada data kelas yang sesuai.</td></tr>`;
+        } else {
+            filtered.forEach((item, index) => {
+                html += `
+                    <tr>
+                        <td class="ps-4 text-muted">${index + 1}</td>
+                        <td><span class="badge bg-light text-dark border font-monospace px-2 py-1">${item.kode}</span></td>
+                        <td class="fw-bold text-dark">${item.nama}</td>
+                        <td>
+                            <div class="text-dark">${item.jurusan}</div>
+                            <div class="text-muted" style="font-size: 12px;">Tingkat: ${item.tingkat}</div>
+                        </td>
+                        <td>
+                            <div class="d-flex align-items-center">
+                                <i class="fas fa-users text-muted me-2"></i>
+                                <span class="fw-medium">${item.jml} Siswa</span>
+                            </div>
+                        </td>
+                        <td class="pe-4 text-end">
+                            <div class="d-flex justify-content-end gap-1">
+                                <button class="btn btn-sm btn-light border text-primary" onclick="editKelas('${item.id}')" title="Edit">
+                                    <i class="fas fa-edit"></i>
+                                </button>
+                                <button class="btn btn-sm btn-light border text-danger" onclick="hapusKelas('${item.id}')" title="Hapus">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                `;
+            });
+        }
+        
+        tbody.innerHTML = html;
+    }
+
+    var modalKelasInstance = null;
+
+    function showModalKelas() {
+        document.getElementById('formKelas').reset();
+        if(document.getElementById('kelasId')) if(document.getElementById('kelasId')) if(document.getElementById('kelasId')) document.getElementById('kelasId').value = '';
+        if(document.getElementById('modalKelasLabel')) if(document.getElementById('modalKelasLabel')) if(document.getElementById('modalKelasLabel')) document.getElementById('modalKelasLabel').textContent = 'Tambah Kelas Baru';
+        
+        if(!modalKelasInstance) {
+            modalKelasInstance = new bootstrap.Modal(document.getElementById('modalKelas'));
+        }
+        modalKelasInstance.show();
+    }
+
+    function editKelas(id) {
+        const kelas = currentKelasData.find(k => k.id === id);
+        if(!kelas) return;
+
+        if(document.getElementById('kelasId')) if(document.getElementById('kelasId')) if(document.getElementById('kelasId')) document.getElementById('kelasId').value = kelas.id;
+        if(document.getElementById('kelasKode')) if(document.getElementById('kelasKode')) if(document.getElementById('kelasKode')) document.getElementById('kelasKode').value = kelas.kode;
+        if(document.getElementById('kelasNama')) if(document.getElementById('kelasNama')) if(document.getElementById('kelasNama')) document.getElementById('kelasNama').value = kelas.nama;
+        if(document.getElementById('kelasJurusan')) if(document.getElementById('kelasJurusan')) if(document.getElementById('kelasJurusan')) document.getElementById('kelasJurusan').value = kelas.jurusan;
+        if(document.getElementById('kelasTingkat')) if(document.getElementById('kelasTingkat')) if(document.getElementById('kelasTingkat')) document.getElementById('kelasTingkat').value = kelas.tingkat;
+        if(document.getElementById('kelasJml')) if(document.getElementById('kelasJml')) if(document.getElementById('kelasJml')) document.getElementById('kelasJml').value = kelas.jml;
+        if(document.getElementById('kelasWali')) if(document.getElementById('kelasWali')) if(document.getElementById('kelasWali')) document.getElementById('kelasWali').value = kelas.wali;
+        if(document.getElementById('kelasStatus')) if(document.getElementById('kelasStatus')) if(document.getElementById('kelasStatus')) document.getElementById('kelasStatus').value = kelas.status;
+
+        if(document.getElementById('modalKelasLabel')) if(document.getElementById('modalKelasLabel')) if(document.getElementById('modalKelasLabel')) document.getElementById('modalKelasLabel').textContent = 'Edit Kelas';
+        
+        if(!modalKelasInstance) {
+            modalKelasInstance = new bootstrap.Modal(document.getElementById('modalKelas'));
+        }
+        modalKelasInstance.show();
+    }
+
+    function simpanKelas() {
+        const form = document.getElementById('formKelas');
+        if(!form.checkValidity()) {
+            form.reportValidity();
+            return;
+        }
+
+        const id = document.getElementById('kelasId').value;
+        const payload = {
+            id: id || 'K' + new Date().getTime(),
+            kode: document.getElementById('kelasKode').value,
+            nama: document.getElementById('kelasNama').value,
+            jurusan: document.getElementById('kelasJurusan').value,
+            tingkat: document.getElementById('kelasTingkat').value,
+            jml: document.getElementById('kelasJml').value,
+            wali: document.getElementById('kelasWali').value,
+            status: document.getElementById('kelasStatus').value
+        };
+
+        modalKelasInstance.hide();
+        showLoading('Menyimpan Kelas...');
+
+        if(typeof google !== 'undefined' && google.script) {
+            google.script.run
+                .withSuccessHandler((res) => {
+                    hideLoading();
+                    if(res.success) {
+                        showAlert('Sukses', res.message, 'success');
+                        initKelas();
+                    } else {
+                        showAlert('Gagal', res.message, 'error');
+                    }
+                })
+                .saveKelas(payload);
+        } else {
+            setTimeout(() => {
+                hideLoading();
+                if(id) {
+                    const idx = currentKelasData.findIndex(k => k.id === id);
+                    if(idx !== -1) currentKelasData[idx] = payload;
+                } else {
+                    currentKelasData.push(payload);
+                }
+                renderTableKelas();
+                showAlert('Berhasil', 'Kelas berhasil disimpan (Preview Mode).', 'success');
+            }, 600);
+        }
+    }
+
+    function hapusKelas(id) {
+        Swal.fire({
+            title: 'Hapus Kelas?',
+            text: "Data kelas yang dihapus tidak dapat dikembalikan!",
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#dc3545',
+            cancelButtonColor: '#6c757d',
+            confirmButtonText: 'Ya, Hapus!',
+            cancelButtonText: 'Batal',
+            reverseButtons: true
+        }).then((result) => {
+            if (result.isConfirmed) {
+                showLoading('Menghapus...');
+                if(typeof google !== 'undefined' && google.script) {
+                    google.script.run
+                        .withSuccessHandler((res) => {
+                            hideLoading();
+                            if(res.success) {
+                                showAlert('Terhapus', res.message, 'success');
+                                initKelas();
+                            } else {
+                                showAlert('Gagal', res.message, 'error');
+                            }
+                        })
+                        .deleteKelas(id);
+                } else {
+                    setTimeout(() => {
+                        hideLoading();
+                        currentKelasData = currentKelasData.filter(k => k.id !== id);
+                        renderTableKelas();
+                        showAlert('Terhapus', 'Kelas berhasil dihapus (Preview Mode).', 'success');
+                    }, 600);
+                }
+            }
+        });
+    }
+</script>

@@ -1,0 +1,228 @@
+<script>
+    var currentJurnalData = [];
+    var modalJurnalInstance = null;
+
+    function initJurnal() {
+        showLoading('Memuat Jurnal...');
+        // Set default filter bulan ini
+        const now = new Date();
+        const month = (now.getMonth() + 1).toString().padStart(2, '0');
+        if(document.getElementById('filterBulanJurnal')) if(document.getElementById('filterBulanJurnal')) if(document.getElementById('filterBulanJurnal')) document.getElementById('filterBulanJurnal').value = `${now.getFullYear()}-${month}`;
+
+        if(typeof google !== 'undefined' && google.script) {
+            google.script.run
+                .withSuccessHandler((res) => {
+                    hideLoading();
+                    if(res.success) {
+                        currentJurnalData = res.data;
+                        renderTabelJurnal();
+                    } else {
+                        showAlert('Error', res.message, 'error');
+                    }
+                })
+                .getJurnalData(currentUser ? currentUser.email : '');
+        } else {
+            // Dummy Data
+            setTimeout(() => {
+                hideLoading();
+                currentJurnalData = [
+                    { id: 'JR01', tanggal: '2023-11-01', kelas: 'XII MIPA 1', mapel: 'Matematika Peminatan', jamKe: '1-2', materi: 'Jarak Titik ke Titik', aktivitas: 'Diskusi kelompok dan pemecahan masalah', kendala: 'Beberapa siswa kurang memahami proyeksi titik', tindakLanjut: 'Memberikan tugas tambahan visualisasi' },
+                    { id: 'JR02', tanggal: '2023-11-02', kelas: 'XII MIPA 2', mapel: 'Matematika Peminatan', jamKe: '3-4', materi: 'Jarak Titik ke Garis', aktivitas: 'Presentasi dan latihan soal', kendala: '-', tindakLanjut: 'Lanjutkan ke jarak titik ke bidang' }
+                ];
+                renderTabelJurnal();
+            }, 500);
+        }
+    }
+
+    function renderTabelJurnal() {
+        const tbody = document.getElementById('jurnalTableBody');
+        const searchVal = document.getElementById('searchJurnal').value.toLowerCase();
+        const filterBulan = document.getElementById('filterBulanJurnal').value; // format: YYYY-MM
+        
+        let html = '';
+        let filtered = currentJurnalData;
+
+        // Filter text
+        if(searchVal) {
+            filtered = filtered.filter(j => j.materi.toLowerCase().includes(searchVal) || j.mapel.toLowerCase().includes(searchVal));
+        }
+
+        // Filter bulan
+        if(filterBulan) {
+            filtered = filtered.filter(j => j.tanggal.startsWith(filterBulan));
+        }
+
+        if(filtered.length === 0) {
+            html = `<tr><td colspan="6" class="text-center text-muted py-5">Belum ada catatan jurnal pada periode ini.</td></tr>`;
+        } else {
+            // Sort by date desc
+            filtered.sort((a,b) => new Date(b.tanggal) - new Date(a.tanggal));
+
+            filtered.forEach((jurnal, index) => {
+                const dateObj = new Date(jurnal.tanggal);
+                const tglStr = dateObj.toLocaleDateString('id-ID', {day:'numeric', month:'short', year:'numeric'});
+                
+                html += `
+                    <tr>
+                        <td class="ps-4 text-muted">${index + 1}</td>
+                        <td>
+                            <div class="fw-bold text-dark">${tglStr}</div>
+                            <div class="badge bg-light text-dark border mt-1">Jam ke ${jurnal.jamKe}</div>
+                        </td>
+                        <td>
+                            <div class="fw-bold text-primary">${jurnal.kelas}</div>
+                            <div class="text-muted small mt-1">${jurnal.mapel}</div>
+                        </td>
+                        <td>
+                            <div class="text-dark fw-medium">${jurnal.materi}</div>
+                        </td>
+                        <td>
+                            <div class="small mb-1"><span class="text-muted">Kegiatan:</span> ${jurnal.aktivitas}</div>
+                            <div class="small mb-1"><span class="text-danger">Kendala:</span> ${jurnal.kendala || '-'}</div>
+                            <div class="small"><span class="text-success">Tindak Lanjut:</span> ${jurnal.tindakLanjut || '-'}</div>
+                        </td>
+                        <td class="pe-4 text-end">
+                            <button class="btn btn-sm btn-light border text-primary me-1" onclick="editJurnal('${jurnal.id}')" title="Edit">
+                                <i class="fas fa-edit"></i>
+                            </button>
+                            <button class="btn btn-sm btn-light border text-danger" onclick="hapusJurnal('${jurnal.id}')" title="Hapus">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </td>
+                    </tr>
+                `;
+            });
+        }
+        tbody.innerHTML = html;
+    }
+
+    function filterJurnal() {
+        renderTabelJurnal();
+    }
+
+    function showModalJurnal() {
+        document.getElementById('formJurnal').reset();
+        if(document.getElementById('jurnalId')) if(document.getElementById('jurnalId')) if(document.getElementById('jurnalId')) document.getElementById('jurnalId').value = '';
+        
+        // Auto set tanggal hari ini
+        const today = new Date().toISOString().split('T')[0];
+        if(document.getElementById('jurnalTanggal')) if(document.getElementById('jurnalTanggal')) if(document.getElementById('jurnalTanggal')) document.getElementById('jurnalTanggal').value = today;
+
+        if(document.getElementById('modalJurnalLabel')) if(document.getElementById('modalJurnalLabel')) if(document.getElementById('modalJurnalLabel')) document.getElementById('modalJurnalLabel').textContent = 'Isi Jurnal Mengajar Baru';
+        
+        if(!modalJurnalInstance) {
+            modalJurnalInstance = new bootstrap.Modal(document.getElementById('modalJurnal'));
+        }
+        modalJurnalInstance.show();
+    }
+
+    function editJurnal(id) {
+        const jurnal = currentJurnalData.find(j => j.id === id);
+        if(!jurnal) return;
+
+        if(document.getElementById('jurnalId')) if(document.getElementById('jurnalId')) if(document.getElementById('jurnalId')) document.getElementById('jurnalId').value = jurnal.id;
+        if(document.getElementById('jurnalTanggal')) if(document.getElementById('jurnalTanggal')) if(document.getElementById('jurnalTanggal')) document.getElementById('jurnalTanggal').value = jurnal.tanggal;
+        if(document.getElementById('jurnalKelas')) if(document.getElementById('jurnalKelas')) if(document.getElementById('jurnalKelas')) document.getElementById('jurnalKelas').value = jurnal.kelas;
+        if(document.getElementById('jurnalMapel')) if(document.getElementById('jurnalMapel')) if(document.getElementById('jurnalMapel')) document.getElementById('jurnalMapel').value = jurnal.mapel;
+        if(document.getElementById('jurnalJamKe')) if(document.getElementById('jurnalJamKe')) if(document.getElementById('jurnalJamKe')) document.getElementById('jurnalJamKe').value = jurnal.jamKe;
+        if(document.getElementById('jurnalMateri')) if(document.getElementById('jurnalMateri')) if(document.getElementById('jurnalMateri')) document.getElementById('jurnalMateri').value = jurnal.materi;
+        if(document.getElementById('jurnalAktivitas')) if(document.getElementById('jurnalAktivitas')) if(document.getElementById('jurnalAktivitas')) document.getElementById('jurnalAktivitas').value = jurnal.aktivitas;
+        if(document.getElementById('jurnalKendala')) if(document.getElementById('jurnalKendala')) if(document.getElementById('jurnalKendala')) document.getElementById('jurnalKendala').value = jurnal.kendala || '';
+        if(document.getElementById('jurnalTindakLanjut')) if(document.getElementById('jurnalTindakLanjut')) if(document.getElementById('jurnalTindakLanjut')) document.getElementById('jurnalTindakLanjut').value = jurnal.tindakLanjut || '';
+
+        if(document.getElementById('modalJurnalLabel')) if(document.getElementById('modalJurnalLabel')) if(document.getElementById('modalJurnalLabel')) document.getElementById('modalJurnalLabel').textContent = 'Edit Jurnal Mengajar';
+        
+        if(!modalJurnalInstance) {
+            modalJurnalInstance = new bootstrap.Modal(document.getElementById('modalJurnal'));
+        }
+        modalJurnalInstance.show();
+    }
+
+    function simpanJurnal() {
+        const form = document.getElementById('formJurnal');
+        if(!form.checkValidity()) {
+            form.reportValidity();
+            return;
+        }
+
+        const id = document.getElementById('jurnalId').value;
+        const payload = {
+            id: id || 'JR' + new Date().getTime(),
+            tanggal: document.getElementById('jurnalTanggal').value,
+            kelas: document.getElementById('jurnalKelas').value,
+            mapel: document.getElementById('jurnalMapel').value,
+            jamKe: document.getElementById('jurnalJamKe').value,
+            materi: document.getElementById('jurnalMateri').value,
+            aktivitas: document.getElementById('jurnalAktivitas').value,
+            kendala: document.getElementById('jurnalKendala').value,
+            tindakLanjut: document.getElementById('jurnalTindakLanjut').value
+        };
+
+        modalJurnalInstance.hide();
+        showLoading('Menyimpan Jurnal...');
+
+        if(typeof google !== 'undefined' && google.script) {
+            google.script.run
+                .withSuccessHandler((res) => {
+                    hideLoading();
+                    if(res.success) {
+                        showAlert('Sukses', res.message, 'success');
+                        initJurnal();
+                    } else {
+                        showAlert('Gagal', res.message, 'error');
+                    }
+                })
+                .saveJurnal(payload);
+        } else {
+            setTimeout(() => {
+                hideLoading();
+                if(id) {
+                    const idx = currentJurnalData.findIndex(j => j.id === id);
+                    if(idx !== -1) currentJurnalData[idx] = payload;
+                } else {
+                    currentJurnalData.push(payload);
+                }
+                renderTabelJurnal();
+                showAlert('Berhasil', 'Jurnal berhasil disimpan (Preview Mode).', 'success');
+            }, 600);
+        }
+    }
+
+    function hapusJurnal(id) {
+        Swal.fire({
+            title: 'Hapus Jurnal?',
+            text: "Data jurnal ini akan dihapus permanen!",
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#dc3545',
+            cancelButtonColor: '#6c757d',
+            confirmButtonText: 'Ya, Hapus!',
+            cancelButtonText: 'Batal',
+            reverseButtons: true
+        }).then((result) => {
+            if (result.isConfirmed) {
+                showLoading('Menghapus...');
+                if(typeof google !== 'undefined' && google.script) {
+                    google.script.run
+                        .withSuccessHandler((res) => {
+                            hideLoading();
+                            if(res.success) {
+                                showAlert('Terhapus', res.message, 'success');
+                                initJurnal();
+                            } else {
+                                showAlert('Gagal', res.message, 'error');
+                            }
+                        })
+                        .deleteJurnal(id);
+                } else {
+                    setTimeout(() => {
+                        hideLoading();
+                        currentJurnalData = currentJurnalData.filter(j => j.id !== id);
+                        renderTabelJurnal();
+                        showAlert('Terhapus', 'Jurnal berhasil dihapus (Preview Mode).', 'success');
+                    }, 600);
+                }
+            }
+        });
+    }
+</script>

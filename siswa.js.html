@@ -1,0 +1,210 @@
+<script>
+    var currentSiswaData = [];
+
+    function initSiswa() {
+        showLoading('Memuat Siswa...');
+        if(typeof google !== 'undefined' && google.script) {
+            google.script.run
+                .withSuccessHandler((res) => {
+                    hideLoading();
+                    if(res.success) {
+                        currentSiswaData = res.data;
+                        renderTableSiswa();
+                    } else {
+                        if(document.getElementById('siswaTableBody')) if(document.getElementById('siswaTableBody')) if(document.getElementById('siswaTableBody')) document.getElementById('siswaTableBody').innerHTML = `<tr><td colspan="7" class="text-center text-danger py-4">${res.message}</td></tr>`;
+                    }
+                })
+                .withFailureHandler(err => {
+                    hideLoading();
+                    if(document.getElementById('siswaTableBody')) if(document.getElementById('siswaTableBody')) if(document.getElementById('siswaTableBody')) document.getElementById('siswaTableBody').innerHTML = `<tr><td colspan="7" class="text-center text-danger py-4">${err.message}</td></tr>`;
+                })
+                .getSiswaData();
+        } else {
+            setTimeout(() => {
+                hideLoading();
+                currentSiswaData = [
+                    { id: 'S01', nis: '2023001', nisn: '0051234567', nama: 'Adi Putra', jk: 'L', kelas: 'X IPA 1', status: 'Aktif' },
+                    { id: 'S02', nis: '2023002', nisn: '0051234568', nama: 'Budi Santoso', jk: 'L', kelas: 'X IPA 1', status: 'Aktif' },
+                    { id: 'S03', nis: '2023003', nisn: '0051234569', nama: 'Citra Lestari', jk: 'P', kelas: 'X IPA 2', status: 'Aktif' },
+                    { id: 'S04', nis: '2023004', nisn: '0051234570', nama: 'Dewi Ayu', jk: 'P', kelas: 'X IPA 2', status: 'Pindah' }
+                ];
+                renderTableSiswa();
+            }, 500);
+        }
+
+        // Setup filter listeners
+        document.getElementById('filterKelasSiswa').addEventListener('change', renderTableSiswa);
+        document.getElementById('searchSiswa').addEventListener('keyup', renderTableSiswa);
+    }
+
+    function renderTableSiswa() {
+        const tbody = document.getElementById('siswaTableBody');
+        const filterKelas = document.getElementById('filterKelasSiswa').value;
+        const searchSiswa = document.getElementById('searchSiswa').value.toLowerCase();
+        
+        let html = '';
+        let filtered = currentSiswaData;
+
+        if (filterKelas) {
+            filtered = filtered.filter(s => s.kelas === filterKelas);
+        }
+
+        if (searchSiswa) {
+            filtered = filtered.filter(s => s.nama.toLowerCase().includes(searchSiswa) || s.nis.includes(searchSiswa) || s.nisn.includes(searchSiswa));
+        }
+
+        if(filtered.length === 0) {
+            html = `<tr><td colspan="7" class="text-center text-muted py-4">Tidak ada data siswa yang sesuai.</td></tr>`;
+        } else {
+            filtered.forEach((item, index) => {
+                let badgeClass = item.status === 'Aktif' ? 'bg-success' : 'bg-warning';
+                let textClass = item.status === 'Aktif' ? 'text-success' : 'text-warning';
+                
+                html += `
+                    <tr>
+                        <td class="ps-4 text-muted">${index + 1}</td>
+                        <td>
+                            <div class="font-monospace" style="font-size: 13px;">NIS: ${item.nis}</div>
+                            <div class="font-monospace text-muted" style="font-size: 12px;">NISN: ${item.nisn}</div>
+                        </td>
+                        <td class="fw-bold text-dark">${item.nama}</td>
+                        <td class="text-muted">${item.jk === 'L' ? 'Laki-laki' : 'Perempuan'}</td>
+                        <td><span class="badge bg-light text-dark border px-2 py-1">${item.kelas}</span></td>
+                        <td><span class="badge ${badgeClass} bg-opacity-10 ${textClass} border border-${item.status==='Aktif'?'success':'warning'} border-opacity-25 px-2 py-1">${item.status}</span></td>
+                        <td class="pe-4 text-end">
+                            <div class="d-flex justify-content-end gap-1">
+                                <button class="btn btn-sm btn-light border text-primary" onclick="editSiswa('${item.id}')" title="Edit">
+                                    <i class="fas fa-edit"></i>
+                                </button>
+                                <button class="btn btn-sm btn-light border text-danger" onclick="hapusSiswa('${item.id}')" title="Hapus">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                `;
+            });
+        }
+        
+        tbody.innerHTML = html;
+    }
+
+    var modalSiswaInstance = null;
+
+    function showModalSiswa() {
+        document.getElementById('formSiswa').reset();
+        if(document.getElementById('siswaId')) if(document.getElementById('siswaId')) if(document.getElementById('siswaId')) document.getElementById('siswaId').value = '';
+        if(document.getElementById('modalSiswaLabel')) if(document.getElementById('modalSiswaLabel')) if(document.getElementById('modalSiswaLabel')) document.getElementById('modalSiswaLabel').textContent = 'Tambah Siswa Baru';
+        
+        if(!modalSiswaInstance) {
+            modalSiswaInstance = new bootstrap.Modal(document.getElementById('modalSiswa'));
+        }
+        modalSiswaInstance.show();
+    }
+
+    function editSiswa(id) {
+        const siswa = currentSiswaData.find(s => s.id === id);
+        if(!siswa) return;
+
+        if(document.getElementById('siswaId')) if(document.getElementById('siswaId')) if(document.getElementById('siswaId')) document.getElementById('siswaId').value = siswa.id;
+        if(document.getElementById('siswaNis')) if(document.getElementById('siswaNis')) if(document.getElementById('siswaNis')) document.getElementById('siswaNis').value = siswa.nis;
+        if(document.getElementById('siswaNisn')) if(document.getElementById('siswaNisn')) if(document.getElementById('siswaNisn')) document.getElementById('siswaNisn').value = siswa.nisn;
+        if(document.getElementById('siswaNama')) if(document.getElementById('siswaNama')) if(document.getElementById('siswaNama')) document.getElementById('siswaNama').value = siswa.nama;
+        if(document.getElementById('siswaJk')) if(document.getElementById('siswaJk')) if(document.getElementById('siswaJk')) document.getElementById('siswaJk').value = siswa.jk;
+        if(document.getElementById('siswaKelas')) if(document.getElementById('siswaKelas')) if(document.getElementById('siswaKelas')) document.getElementById('siswaKelas').value = siswa.kelas;
+        if(document.getElementById('siswaStatus')) if(document.getElementById('siswaStatus')) if(document.getElementById('siswaStatus')) document.getElementById('siswaStatus').value = siswa.status;
+
+        if(document.getElementById('modalSiswaLabel')) if(document.getElementById('modalSiswaLabel')) if(document.getElementById('modalSiswaLabel')) document.getElementById('modalSiswaLabel').textContent = 'Edit Siswa';
+        
+        if(!modalSiswaInstance) {
+            modalSiswaInstance = new bootstrap.Modal(document.getElementById('modalSiswa'));
+        }
+        modalSiswaInstance.show();
+    }
+
+    function simpanSiswa() {
+        const form = document.getElementById('formSiswa');
+        if(!form.checkValidity()) {
+            form.reportValidity();
+            return;
+        }
+
+        const id = document.getElementById('siswaId').value;
+        const payload = {
+            id: id || 'S' + new Date().getTime(),
+            nis: document.getElementById('siswaNis').value,
+            nisn: document.getElementById('siswaNisn').value,
+            nama: document.getElementById('siswaNama').value,
+            jk: document.getElementById('siswaJk').value,
+            kelas: document.getElementById('siswaKelas').value,
+            status: document.getElementById('siswaStatus').value
+        };
+
+        modalSiswaInstance.hide();
+        showLoading('Menyimpan Siswa...');
+
+        if(typeof google !== 'undefined' && google.script) {
+            google.script.run
+                .withSuccessHandler((res) => {
+                    hideLoading();
+                    if(res.success) {
+                        showAlert('Sukses', res.message, 'success');
+                        initSiswa();
+                    } else {
+                        showAlert('Gagal', res.message, 'error');
+                    }
+                })
+                .saveSiswa(payload);
+        } else {
+            setTimeout(() => {
+                hideLoading();
+                if(id) {
+                    const idx = currentSiswaData.findIndex(s => s.id === id);
+                    if(idx !== -1) currentSiswaData[idx] = payload;
+                } else {
+                    currentSiswaData.push(payload);
+                }
+                renderTableSiswa();
+                showAlert('Berhasil', 'Siswa berhasil disimpan (Preview Mode).', 'success');
+            }, 600);
+        }
+    }
+
+    function hapusSiswa(id) {
+        Swal.fire({
+            title: 'Hapus Siswa?',
+            text: "Data siswa yang dihapus tidak dapat dikembalikan!",
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#dc3545',
+            cancelButtonColor: '#6c757d',
+            confirmButtonText: 'Ya, Hapus!',
+            cancelButtonText: 'Batal',
+            reverseButtons: true
+        }).then((result) => {
+            if (result.isConfirmed) {
+                showLoading('Menghapus...');
+                if(typeof google !== 'undefined' && google.script) {
+                    google.script.run
+                        .withSuccessHandler((res) => {
+                            hideLoading();
+                            if(res.success) {
+                                showAlert('Terhapus', res.message, 'success');
+                                initSiswa();
+                            } else {
+                                showAlert('Gagal', res.message, 'error');
+                            }
+                        })
+                        .deleteSiswa(id);
+                } else {
+                    setTimeout(() => {
+                        hideLoading();
+                        currentSiswaData = currentSiswaData.filter(s => s.id !== id);
+                        renderTableSiswa();
+                        showAlert('Terhapus', 'Siswa berhasil dihapus (Preview Mode).', 'success');
+                    }, 600);
+                }
+            }
+        });
+    }
+</script>

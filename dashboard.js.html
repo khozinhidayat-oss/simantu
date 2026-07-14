@@ -1,0 +1,194 @@
+<script>
+    function initDashboard() {
+        if(typeof google !== 'undefined' && google.script && currentUser) {
+            if(document.getElementById('dashUserName')) if(document.getElementById('dashUserName')) if(document.getElementById('dashUserName')) document.getElementById('dashUserName').textContent = currentUser.namaGuru || 'Guru';
+            const firstName = (currentUser.namaGuru || 'Guru').split(' ')[0];
+            if(document.getElementById('dashUserImage')) if(document.getElementById('dashUserImage')) if(document.getElementById('dashUserImage')) document.getElementById('dashUserImage').src = 'https://ui-avatars.com/api/?name=' + encodeURIComponent(firstName) + '&background=ffffff&color=2563EB';
+
+            google.script.run
+                .withSuccessHandler(renderDashboard)
+                .withFailureHandler((err) => {
+                    console.error("Dashboard Error:", err);
+                    if(document.getElementById('jadwalList')) if(document.getElementById('jadwalList')) if(document.getElementById('jadwalList')) document.getElementById('jadwalList').innerHTML = '<div class="text-danger small py-2">Gagal memuat jadwal.</div>';
+                })
+                .getDashboardStats(currentUser.email);
+        } else {
+            // Dummy data jika preview diluar Google Workspace
+            const dummyData = {
+                success: true,
+                data: {
+                    jmlKelas: 4, jmlSiswa: 124, jmlMapel: 2, jmlJurnal: 18, jmlAbsen: 32,
+                    jadwalHariIni: [
+                        { jam: '07:30 - 09:00', mapel: 'Matematika Peminatan', kelas: 'XII MIPA 1', ruang: 'R. 201' },
+                        { jam: '09:00 - 10:30', mapel: 'Matematika Peminatan', kelas: 'XII MIPA 2', ruang: 'R. 202' },
+                        { jam: '11:00 - 12:30', mapel: 'Matematika Wajib', kelas: 'X IPS 1', ruang: 'R. 104' }
+                    ],
+                    pengumuman: [
+                        { judul: 'Batas Pengisian Nilai PTS', isi: 'Batas akhir pengisian nilai adalah tanggal 25 Oktober. Harap segera diselesaikan.', type: 'info' },
+                        { judul: 'Rapat Evaluasi', isi: 'Rapat guru akan diadakan hari Jumat pukul 13.00 WIB di Ruang Guru.', type: 'success' }
+                    ],
+                    jurnalTerakhir: [
+                        { tanggal: '12 Okt 2023', kelas: 'XII MIPA 1', materi: 'Limit Fungsi Trigonometri' },
+                        { tanggal: '11 Okt 2023', kelas: 'XII MIPA 2', materi: 'Turunan Fungsi Trigonometri' },
+                        { tanggal: '10 Okt 2023', kelas: 'X IPS 1', materi: 'Fungsi Komposisi' }
+                    ]
+                }
+            };
+            
+            if(document.getElementById('dashUserName')) if(document.getElementById('dashUserName')) if(document.getElementById('dashUserName')) document.getElementById('dashUserName').textContent = 'Guru Tester';
+            
+            renderDashboard(dummyData);
+        }
+    }
+
+    function renderDashboard(response) {
+        if(!response || !response.success) return;
+        
+        const data = response.data;
+        
+        // Render Angka Statistik
+        const setStat = (id, val) => { const el = document.getElementById(id); if(el) el.textContent = val; };
+        setStat('statSiswa', data.jmlSiswa);
+        setStat('statKelas', data.jmlKelas);
+        setStat('statMapel', data.jmlMapel);
+        setStat('statJurnal', data.jmlJurnal);
+
+        // Render Jadwal Mengajar
+        let jadwalHtml = '';
+        if(data.jadwalHariIni && data.jadwalHariIni.length > 0) {
+            data.jadwalHariIni.forEach(j => {
+                jadwalHtml += `
+                    <div class="timeline-item">
+                        <div class="timeline-marker"></div>
+                        <div class="d-flex justify-content-between align-items-start">
+                            <div>
+                                <h6 class="mb-1 fw-bold text-dark" style="font-size:14px;">${j.mapel}</h6>
+                                <div class="text-muted" style="font-size:12px;">
+                                    <span class="badge bg-light text-dark border me-1">${j.kelas}</span> 
+                                    <span><i class="fas fa-map-marker-alt me-1"></i>${j.ruang}</span>
+                                </div>
+                            </div>
+                            <span class="badge bg-primary bg-opacity-10 text-primary border border-primary border-opacity-25 font-monospace px-2 py-1">${j.jam}</span>
+                        </div>
+                    </div>
+                `;
+            });
+        } else {
+            jadwalHtml = `
+                <div class="text-center py-4">
+                    <div class="bg-light rounded-circle d-inline-flex align-items-center justify-content-center mb-2" style="width:50px;height:50px;">
+                        <i class="fas fa-coffee text-muted fs-5"></i>
+                    </div>
+                    <p class="text-muted small mb-0">Tidak ada jadwal mengajar hari ini</p>
+                </div>`;
+        }
+        if(document.getElementById('jadwalList')) if(document.getElementById('jadwalList')) if(document.getElementById('jadwalList')) document.getElementById('jadwalList').innerHTML = jadwalHtml;
+
+        // Render Pengumuman
+        let pengumumanHtml = '';
+        if(data.pengumuman && data.pengumuman.length > 0) {
+            data.pengumuman.forEach(p => {
+                let borderClass = p.type === 'success' ? 'border-success' : 'border-warning';
+                let iconClass = p.type === 'success' ? 'fa-check-circle text-success' : 'fa-info-circle text-warning';
+                
+                pengumumanHtml += `
+                    <div class="border-start border-4 ${borderClass} bg-light bg-opacity-50 p-3 mb-3 rounded-end-3">
+                        <div class="d-flex align-items-center mb-1">
+                            <i class="fas ${iconClass} me-2"></i>
+                            <h6 class="fw-bold mb-0 text-dark" style="font-size:13px;">${p.judul}</h6>
+                        </div>
+                        <p class="text-muted mb-0 ps-4" style="font-size:12px; line-height:1.5;">${p.isi}</p>
+                    </div>
+                `;
+            });
+        } else {
+            pengumumanHtml = '<div class="text-center text-muted small py-3">Tidak ada pengumuman</div>';
+        }
+        if(document.getElementById('pengumumanList')) if(document.getElementById('pengumumanList')) if(document.getElementById('pengumumanList')) document.getElementById('pengumumanList').innerHTML = pengumumanHtml;
+
+        // Render Jurnal Terakhir
+        let jurnalHtml = '';
+        if(data.jurnalTerakhir && data.jurnalTerakhir.length > 0) {
+            data.jurnalTerakhir.forEach(j => {
+                jurnalHtml += `
+                    <tr>
+                        <td class="ps-4 text-muted small">${j.tanggal}</td>
+                        <td><span class="badge bg-light text-dark border">${j.kelas}</span></td>
+                        <td class="small fw-medium text-dark">${j.materi}</td>
+                    </tr>
+                `;
+            });
+        } else {
+            jurnalHtml = '<tr><td colspan="3" class="text-center py-4 text-muted small">Belum ada jurnal</td></tr>';
+        }
+        if(document.getElementById('dashJurnalList')) if(document.getElementById('dashJurnalList')) if(document.getElementById('dashJurnalList')) document.getElementById('dashJurnalList').innerHTML = jurnalHtml;
+
+        // Render Grafik
+        renderCharts();
+    }
+
+    function renderCharts() {
+        // Activity Chart
+        const ctxActEl = document.getElementById('activityChart');
+        if(ctxActEl) {
+            if(window.myActivityChart) window.myActivityChart.destroy();
+            const ctxAct = ctxActEl.getContext('2d');
+            window.myActivityChart = new Chart(ctxAct, {
+                type: 'bar',
+                data: {
+                    labels: ['Sen', 'Sel', 'Rab', 'Kam', 'Jum'],
+                    datasets: [
+                        {
+                            label: 'Jam Mengajar',
+                            data: [4, 6, 3, 5, 2],
+                            backgroundColor: '#2563EB',
+                            borderRadius: 6,
+                            barPercentage: 0.5
+                        },
+                        {
+                            label: 'Jurnal Diisi',
+                            data: [3, 4, 3, 4, 2],
+                            backgroundColor: '#4F46E5',
+                            borderRadius: 6,
+                            barPercentage: 0.5
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true, maintainAspectRatio: false,
+                    scales: {
+                        y: { beginAtZero: true, grid: { borderDash: [2, 4], color: '#E2E8F0', drawBorder: false }, ticks: { font: { family: 'Inter' } } },
+                        x: { grid: { display: false, drawBorder: false }, ticks: { font: { family: 'Inter' } } }
+                    },
+                    plugins: { legend: { position: 'top', align: 'end', labels: { boxWidth: 10, usePointStyle: true, font: { family: 'Inter', size: 12 } } } },
+                    interaction: { intersect: false, mode: 'index' }
+                }
+            });
+        }
+
+        // Absen Chart
+        const ctxAbsEl = document.getElementById('absenChart');
+        if(ctxAbsEl) {
+            if(window.myAbsenChart) window.myAbsenChart.destroy();
+            const ctxAbs = ctxAbsEl.getContext('2d');
+            window.myAbsenChart = new Chart(ctxAbs, {
+                type: 'doughnut',
+                data: {
+                    labels: ['Hadir', 'Sakit', 'Izin', 'Alpa'],
+                    datasets: [{
+                        data: [85, 5, 8, 2],
+                        backgroundColor: ['#22C55E', '#F59E0B', '#06B6D4', '#EF4444'],
+                        borderWidth: 0,
+                        hoverOffset: 4
+                    }]
+                },
+                options: {
+                    responsive: true, maintainAspectRatio: false, cutout: '70%',
+                    plugins: {
+                        legend: { position: 'right', labels: { usePointStyle: true, font: { family: 'Inter', size: 12 } } }
+                    }
+                }
+            });
+        }
+    }
+</script>

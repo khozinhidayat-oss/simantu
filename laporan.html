@@ -1,0 +1,151 @@
+<div class="d-flex">
+    <div id="sidebar-container"></div>
+    
+    <div class="main-content flex-grow-1" id="main-wrapper">
+        <div id="navbar-container"></div>
+        
+        <div class="container-fluid p-4" style="margin-top: 60px;">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <div>
+                    <h3 class="fw-bold text-dark mb-1">Rekap Laporan</h3>
+                    <nav aria-label="breadcrumb">
+                        <ol class="breadcrumb mb-0">
+                            <li class="breadcrumb-item"><a href="#" onclick="loadPage('dashboard')" class="text-decoration-none">Dashboard</a></li>
+                            <li class="breadcrumb-item active" aria-current="page">Laporan</li>
+                        </ol>
+                    </nav>
+                </div>
+            </div>
+
+            <!-- Filter Laporan -->
+            <div class="card border-0 shadow-sm rounded-4 mb-4">
+                <div class="card-body p-4">
+                    <form id="formFilterLaporan" onsubmit="generateLaporan(event)">
+                        <div class="row g-3 align-items-end">
+                            <div class="col-md-2">
+                                <label class="form-label small fw-bold text-muted">Kelas <span class="text-danger">*</span></label>
+                                <select class="form-select bg-light border-0" id="filterKelasLap" required>
+                                    <option value="">-- Pilih --</option>
+                                    <option value="XII MIPA 1">XII MIPA 1</option>
+                                    <option value="XII MIPA 2">XII MIPA 2</option>
+                                    <option value="XI MIPA 1">XI MIPA 1</option>
+                                </select>
+                            </div>
+                            <div class="col-md-3">
+                                <label class="form-label small fw-bold text-muted">Mata Pelajaran <span class="text-danger">*</span></label>
+                                <select class="form-select bg-light border-0" id="filterMapelLap" required>
+                                    <option value="">-- Pilih --</option>
+                                    <option value="Matematika Peminatan">Matematika Peminatan</option>
+                                    <option value="Matematika Wajib">Matematika Wajib</option>
+                                </select>
+                            </div>
+                            <div class="col-md-3">
+                                <label class="form-label small fw-bold text-muted">Mulai Tanggal</label>
+                                <input type="date" class="form-control bg-light border-0" id="filterTglMulai">
+                            </div>
+                            <div class="col-md-2">
+                                <label class="form-label small fw-bold text-muted">Sampai Tanggal</label>
+                                <input type="date" class="form-control bg-light border-0" id="filterTglAkhir">
+                            </div>
+                            <div class="col-md-2">
+                                <button type="submit" class="btn btn-primary w-100 rounded-3 shadow-sm">
+                                    <i class="fas fa-file-alt me-2"></i>Buat Laporan
+                                </button>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <div id="hasilLaporanContainer" style="display:none;">
+                <!-- Ringkasan Statistik -->
+                <div class="row g-4 mb-4">
+                    <div class="col-md-4">
+                        <div class="card border-0 shadow-sm rounded-4 h-100 bg-primary bg-opacity-10">
+                            <div class="card-body p-4 d-flex align-items-center">
+                                <div class="bg-primary text-white rounded-circle d-flex align-items-center justify-content-center me-4 shadow-sm" style="width: 56px; height: 56px;">
+                                    <i class="fas fa-calendar-check fs-4"></i>
+                                </div>
+                                <div>
+                                    <div class="text-muted small fw-bold text-uppercase mb-1">Total Pertemuan</div>
+                                    <h3 class="fw-bold mb-0 text-primary" id="lapTotalPertemuan">0</h3>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="card border-0 shadow-sm rounded-4 h-100 bg-success bg-opacity-10">
+                            <div class="card-body p-4 d-flex align-items-center">
+                                <div class="bg-success text-white rounded-circle d-flex align-items-center justify-content-center me-4 shadow-sm" style="width: 56px; height: 56px;">
+                                    <i class="fas fa-users fs-4"></i>
+                                </div>
+                                <div>
+                                    <div class="text-muted small fw-bold text-uppercase mb-1">Rata-rata Kehadiran</div>
+                                    <h3 class="fw-bold mb-0 text-success" id="lapRataHadir">0%</h3>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="card border-0 shadow-sm rounded-4 h-100 bg-info bg-opacity-10">
+                            <div class="card-body p-4 d-flex align-items-center">
+                                <div class="bg-info text-white rounded-circle d-flex align-items-center justify-content-center me-4 shadow-sm" style="width: 56px; height: 56px;">
+                                    <i class="fas fa-star fs-4"></i>
+                                </div>
+                                <div>
+                                    <div class="text-muted small fw-bold text-uppercase mb-1">Rata-rata Nilai Kelas</div>
+                                    <h3 class="fw-bold mb-0 text-info" id="lapRataNilai">0</h3>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Tabel Rincian -->
+                <div class="card border-0 shadow-sm rounded-4">
+                    <div class="card-header bg-white border-bottom pt-4 pb-3 px-4 d-flex justify-content-between align-items-center">
+                        <div>
+                            <h5 class="fw-bold mb-1">Rincian Laporan Siswa</h5>
+                            <div class="text-muted small" id="infoLaporanText"></div>
+                        </div>
+                        <div class="d-flex gap-2">
+                            <button class="btn btn-outline-danger rounded-3" onclick="exportLaporan('pdf')">
+                                <i class="fas fa-file-pdf me-2"></i>Cetak PDF
+                            </button>
+                            <button class="btn btn-outline-success rounded-3" onclick="exportLaporan('excel')">
+                                <i class="fas fa-file-excel me-2"></i>Export Excel
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div class="card-body p-0">
+                        <div class="table-responsive">
+                            <table class="table table-hover align-middle mb-0" id="tableLaporan">
+                                <thead class="table-light text-muted small text-uppercase text-center">
+                                    <tr>
+                                        <th class="py-3" rowspan="2" width="5%">No</th>
+                                        <th class="py-3 text-start" rowspan="2" width="25%">Siswa</th>
+                                        <th class="py-2 border-bottom-0" colspan="4">Absensi</th>
+                                        <th class="py-3" rowspan="2" width="10%">Rata-rata Nilai</th>
+                                        <th class="py-3 text-start" rowspan="2" width="15%">Ket. Nilai</th>
+                                    </tr>
+                                    <tr>
+                                        <th class="py-2 border-top-0" width="8%">H</th>
+                                        <th class="py-2 border-top-0" width="8%">I</th>
+                                        <th class="py-2 border-top-0" width="8%">S</th>
+                                        <th class="py-2 border-top-0" width="8%">A</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="laporanTableBody" class="border-top-0">
+                                    <!-- Data injected via JS -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div id="footer-container" class="mt-4"></div>
+        </div>
+    </div>
+</div>

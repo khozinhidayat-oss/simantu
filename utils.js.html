@@ -1,0 +1,319 @@
+
+<script>
+    // --- MOCK google.script.run FOR VERCEL ---
+    if (typeof window.google === 'undefined') {
+        window.google = {};
+    }
+    if (typeof window.google.script === 'undefined') {
+        const GAS_API_URL = localStorage.getItem('GAS_API_URL') || prompt('Masukkan URL Google Apps Script Web App (API):') || '';
+        if (GAS_API_URL) localStorage.setItem('GAS_API_URL', GAS_API_URL);
+        
+        window.google.script = {
+            run: new Proxy({}, {
+                get: function(target, prop) {
+                    if (prop === 'withSuccessHandler' || prop === 'withFailureHandler') {
+                        const builder = { _success: null, _failure: null };
+                        const createProxy = (b) => new Proxy(b, {
+                            get: function(t, p) {
+                                if (p === 'withSuccessHandler') {
+                                    return (cb) => { t._success = cb; return createProxy(t); };
+                                }
+                                if (p === 'withFailureHandler') {
+                                    return (cb) => { t._failure = cb; return createProxy(t); };
+                                }
+                                return function(...args) {
+                                    let promise;
+                                    if (!GAS_API_URL) {
+                                        promise = Promise.reject(new Error("No GAS_API_URL"));
+                                    } else {
+                                        promise = fetch(GAS_API_URL, {
+                                            method: 'POST',
+                                            redirect: 'follow',
+                                            headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+                                            body: JSON.stringify({ method: p, args: args })
+                                        }).then(res => res.text()).then(text => {
+                                            if (!text) throw new Error("Respons kosong. Ini sering terjadi karena masalah CORS jika Web App di-deploy sebagai 'User accessing the web app'. Untuk Vercel, deploy harus sebagai 'Execute as: Me' dengan akses 'Anyone'.");
+                                            try {
+                                                return JSON.parse(text);
+                                            } catch (e) {
+                                                console.error("Failed to parse JSON. Raw response:", text);
+                                                throw new Error("Invalid JSON response");
+                                            }
+                                        });
+                                    }
+                                    
+                                    promise.then(data => {
+                                        if (data.success) {
+                                            if (t._success) t._success(data.data);
+                                        } else {
+                                            if (t._failure) t._failure(new Error(data.error));
+                                            else console.error("GAS Error:", data.error);
+                                        }
+                                    }).catch(err => {
+                                        console.warn("GAS API failed or not connected, using fallback mock for preview.");
+                                        let mockData = { success: true, data: null };
+                                        if (p === 'loginWithGoogle') {
+                                            mockData.data = { success: true, message: 'Mock Login Berhasil', session: { sessionId: 'mock-session', email: args[0] || 'guru@sekolah.id', nama: 'Guru Mock', role: 'Guru' } };
+                                        } else if (p === 'getDashboardData') {
+                                            mockData.data = { countSiswa: 120, countKelas: 4, countMapel: 2, countJurnal: 15 };
+                                        } else if (p === 'getGoogleAccountEmail') {
+                                            mockData.data = 'guru@sekolah.id';
+                                        } else {
+                                            mockData.data = { success: true, data: [] };
+                                        }
+                                        if (t._success) t._success(mockData.data);
+                                    });
+                                };
+                            }
+                        });
+                        return createProxy(builder)[prop];
+                    }
+                    
+                    return function(...args) {
+                        if (!GAS_API_URL) {
+                            console.warn("No GAS_API_URL for", prop);
+                            return;
+                        }
+                        fetch(GAS_API_URL, {
+                            method: 'POST',
+                            redirect: 'follow',
+                            headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+                            body: JSON.stringify({ method: prop, args: args })
+                        })
+                        .then(res => res.text())
+                        .then(text => {
+                            if (!text) throw new Error("Empty response");
+                            return JSON.parse(text);
+                        })
+                        .then(data => {
+                            if (!data.success) console.error("GAS Error:", data.error);
+                        })
+                        .catch(err => console.error("Fetch Error:", err));
+                    };
+                }
+            })
+        };
+    }
+    // --- END MOCK ---
+
+    // Theme Management
+    function initTheme() {
+        const savedTheme = localStorage.getItem('simengajar_theme') || 'light';
+        applyTheme(savedTheme);
+    }
+
+    function toggleTheme() {
+        const current = document.documentElement.getAttribute('data-theme');
+        const next = current === 'dark' ? 'light' : 'dark';
+        applyTheme(next);
+    }
+
+    function applyTheme(theme) {
+        document.documentElement.setAttribute('data-theme', theme);
+        localStorage.setItem('simengajar_theme', theme);
+        
+        const themeIcon = document.getElementById('theme-icon');
+        if (themeIcon) {
+            themeIcon.className = theme === 'dark' ? 'fas fa-sun text-warning' : 'fas fa-moon text-secondary';
+        }
+    }
+
+    // Clock
+    function updateClock() {
+        const now = new Date();
+        const clockEl = document.getElementById('nav-clock');
+        const dateEl = document.getElementById('nav-date');
+        if(clockEl) {
+            clockEl.textContent = now.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
+        }
+        if(dateEl) {
+            dateEl.textContent = now.toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+        }
+    }
+    setInterval(updateClock, 1000);
+
+    // Global State
+    var currentUser = null;
+
+    function showLoading(text = 'Memproses...') {
+        if(document.getElementById('loadingText')) if(document.getElementById('loadingText')) if(document.getElementById('loadingText')) document.getElementById('loadingText').textContent = text;
+        document.getElementById('globalLoading').classList.remove('d-none');
+    }
+
+    function hideLoading() {
+        document.getElementById('globalLoading').classList.add('d-none');
+    }
+
+    function showAlert(title, text, icon) {
+        Swal.fire({
+            title: title,
+            text: text,
+            icon: icon,
+            confirmButtonColor: '#2563eb',
+            customClass: {
+                popup: 'rounded-4 border-0 shadow-lg'
+            }
+        });
+    }
+
+    function toggleSidebar() {
+        const sidebar = document.getElementById('sidebar');
+        const navbar = document.getElementById('top-navbar');
+        const mainWrapper = document.getElementById('main-wrapper');
+        
+        if(window.innerWidth > 991.98) {
+            // Desktop
+            sidebar.classList.toggle('sidebar-collapsed');
+            navbar.classList.toggle('navbar-expanded');
+            mainWrapper.classList.toggle('main-expanded');
+        } else {
+            // Mobile
+            sidebar.classList.toggle('sidebar-open');
+        }
+    }
+
+    function updateUserInfoUI() {
+        if(currentUser) {
+            const nameEl = document.getElementById('navUserName');
+            const imgEl = document.getElementById('navUserImage');
+            if(nameEl) nameEl.textContent = currentUser.nama || currentUser.email;
+            if(imgEl) {
+                const safeName = encodeURIComponent(currentUser.nama || 'Guru');
+                imgEl.src = `https://ui-avatars.com/api/?name=${safeName}&background=2563eb&color=fff&bold=true`;
+            }
+        }
+    }
+
+    function loadPage(pageName) {
+        showLoading('Memuat Halaman...');
+        
+        // Simulasi delay rendering agar terlihat smooth
+        setTimeout(() => {
+            const template = document.getElementById('tpl-' + pageName);
+            const appDiv = document.getElementById('app');
+            
+            if(template) {
+                appDiv.innerHTML = template.innerHTML;
+            } else {
+                // Tampilan Halaman Belum Tersedia (Placeholder Tahap Selanjutnya)
+                appDiv.innerHTML = `
+                    <div class="d-flex">
+                        <div id="sidebar-container"></div>
+                        <div class="main-content flex-grow-1" id="main-wrapper">
+                            <div id="navbar-container"></div>
+                            <div class="container-fluid p-4" style="margin-top: 60px;">
+                                <div class="card border-0 shadow-sm rounded-4 mt-4">
+                                    <div class="card-body p-5 text-center">
+                                        <div class="bg-light rounded-circle d-inline-flex align-items-center justify-content-center mb-4" style="width: 80px; height: 80px;">
+                                            <i class="fas fa-tools fa-3x text-secondary"></i>
+                                        </div>
+                                        <h4 class="fw-bold text-dark">Halaman ${pageName.charAt(0).toUpperCase() + pageName.slice(1)}</h4>
+                                        <p class="text-muted mb-0">Halaman ini sedang dalam tahap pengembangan dan akan diselesaikan pada iterasi selanjutnya.</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }
+
+            // Inject Sidebar, Navbar, Footer into target containers if they exist
+            if(pageName !== 'login') {
+                const sidebarHtml = document.getElementById('comp-sidebar').innerHTML;
+                const navbarHtml = document.getElementById('comp-navbar').innerHTML;
+                const footerHtml = document.getElementById('comp-footer').innerHTML;
+                
+                if(document.getElementById('sidebar-container')) if(document.getElementById('sidebar-container')) if(document.getElementById('sidebar-container')) if(document.getElementById('sidebar-container')) document.getElementById('sidebar-container').innerHTML = sidebarHtml;
+                if(document.getElementById('navbar-container')) if(document.getElementById('navbar-container')) if(document.getElementById('navbar-container')) if(document.getElementById('navbar-container')) document.getElementById('navbar-container').innerHTML = navbarHtml;
+                if(document.getElementById('footer-container')) if(document.getElementById('footer-container')) if(document.getElementById('footer-container')) if(document.getElementById('footer-container')) document.getElementById('footer-container').innerHTML = footerHtml;
+                
+                // Set active class on sidebar items
+                document.querySelectorAll('.sidebar .nav-link').forEach(link => {
+                    link.classList.remove('active-nav');
+                    if(link.getAttribute('onclick') && link.getAttribute('onclick').includes(pageName)) {
+                        link.classList.add('active-nav');
+                    }
+                });
+
+                updateUserInfoUI();
+                
+                // Tutup sidebar di mobile setelah klik menu
+                if(window.innerWidth < 992) {
+                    const sb = document.getElementById('sidebar');
+                    if(sb) sb.classList.remove('sidebar-open');
+                }
+            }
+            
+            // Inisialisasi logika spesifik per halaman
+            if(pageName === 'dashboard' && typeof initDashboard === 'function') {
+                initDashboard();
+            } else if(pageName === 'guru' && typeof initGuru === 'function') {
+                initGuru();
+            } else if(pageName === 'kelas' && typeof initKelas === 'function') {
+                initKelas();
+            } else if(pageName === 'siswa' && typeof initSiswa === 'function') {
+                initSiswa();
+            } else if(pageName === 'mapel' && typeof initMapel === 'function') {
+                initMapel();
+            } else if(pageName === 'jadwal' && typeof initJadwal === 'function') {
+                initJadwal();
+            } else if(pageName === 'absensi' && typeof initAbsensi === 'function') {
+                initAbsensi();
+            } else if(pageName === 'modul' && typeof initModul === 'function') {
+                initModul();
+            } else if(pageName === 'jurnal' && typeof initJurnal === 'function') {
+                initJurnal();
+            } else if(pageName === 'penilaian' && typeof initPenilaian === 'function') {
+                initPenilaian();
+            } else if(pageName === 'laporan' && typeof initLaporan === 'function') {
+                initLaporan();
+            } else if(pageName === 'pengaturan' && typeof initPengaturan === 'function') {
+                initPengaturan();
+            }
+
+            hideLoading();
+        }, 400);
+    }
+    
+    function logout() {
+        Swal.fire({
+            title: 'Keluar Sistem',
+            text: 'Apakah Anda yakin ingin mengakhiri sesi ini?',
+            icon: 'question',
+            showCancelButton: true,
+            confirmButtonText: 'Ya, Keluar',
+            cancelButtonText: 'Batal',
+            confirmButtonColor: '#dc3545',
+            customClass: {
+                popup: 'rounded-4 border-0 shadow-sm'
+            }
+        }).then((result) => {
+            if(result.isConfirmed) {
+                var sessionId = localStorage.getItem('simengajar_session_id');
+                if(typeof google !== 'undefined' && google.script && sessionId) {
+                    showLoading('Memproses logout...');
+                    google.script.run
+                        .withSuccessHandler(function(res) {
+                            hideLoading();
+                            localStorage.removeItem('simengajar_session_id');
+                            currentUser = null;
+                            if(document.getElementById('app')) if(document.getElementById('app')) if(document.getElementById('app')) document.getElementById('app').innerHTML = `<?!= include('login'); ?>`;
+                            if (typeof initLogin === 'function') initLogin();
+                            showAlert('Berhasil', 'Anda berhasil logout.', 'success');
+                        })
+                        .withFailureHandler(function(err) {
+                            hideLoading();
+                            showAlert('Error', 'Gagal memproses logout: ' + err.message, 'error');
+                        })
+                        .logout(sessionId);
+                } else {
+                    localStorage.removeItem('simengajar_session_id');
+                    currentUser = null;
+                    if(document.getElementById('app')) if(document.getElementById('app')) if(document.getElementById('app')) document.getElementById('app').innerHTML = `<?!= include('login'); ?>`;
+                    if (typeof initLogin === 'function') initLogin();
+                    showAlert('Berhasil', 'Anda berhasil logout.', 'success');
+                }
+            }
+        });
+    }
+</script>

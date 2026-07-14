@@ -1,0 +1,43 @@
+<nav class="navbar navbar-expand-lg bg-white border-bottom fixed-top shadow-sm" style="z-index: 1030; left: 260px; transition: all 0.3s ease; height: 70px;" id="top-navbar">
+    <div class="container-fluid px-4">
+        <button class="btn btn-light border-0 rounded-circle d-flex align-items-center justify-content-center" id="sidebarToggle" onclick="toggleSidebar()" style="width: 40px; height: 40px; background-color: var(--hover-bg);">
+            <i class="fas fa-bars text-secondary"></i>
+        </button>
+        
+        <div class="d-flex align-items-center ms-4 d-none d-lg-flex">
+            <h5 class="fw-bold mb-0 text-dark" id="nav-page-title">Dashboard</h5>
+        </div>
+
+        <div class="d-flex align-items-center ms-auto">
+            <div class="d-none d-md-flex flex-column align-items-end me-4 pe-4 border-end">
+                <span class="fw-bold text-dark fs-5" id="nav-clock" style="line-height: 1.2;">00:00</span>
+                <span class="text-muted" style="font-size: 0.75rem;" id="nav-date">Memuat tanggal...</span>
+            </div>
+
+            <button class="btn btn-light border-0 rounded-circle d-flex align-items-center justify-content-center me-3" onclick="toggleTheme()" style="width: 40px; height: 40px; background-color: var(--hover-bg);">
+                <i class="fas fa-moon text-secondary" id="theme-icon"></i>
+            </button>
+
+            <div class="me-4 position-relative cursor-pointer p-2 rounded-circle hover-bg-light" style="width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; background-color: var(--hover-bg);">
+                <i class="fas fa-bell text-secondary"></i>
+                <span class="position-absolute top-0 start-100 translate-middle p-1 bg-danger border border-2 border-white rounded-circle" style="margin-top: 8px; margin-left: -8px;"></span>
+            </div>
+            
+            <div class="dropdown">
+                <a class="text-decoration-none d-flex align-items-center" href="#" role="button" data-bs-toggle="dropdown">
+                    <div class="text-end me-3 d-none d-md-block">
+                        <div class="fw-bold small text-dark" id="navUserName">Memuat...</div>
+                        <div class="text-muted" style="font-size: 11px;">Guru Pengajar</div>
+                    </div>
+                    <img src="https://ui-avatars.com/api/?name=Guru&background=2563EB&color=fff" class="rounded-circle border border-2 border-white shadow-sm" width="45" height="45" id="navUserImage">
+                </a>
+                <ul class="dropdown-menu dropdown-menu-end border-0 shadow-lg mt-3 rounded-4 p-2" style="min-width: 200px;">
+                    <li><a class="dropdown-item rounded-3 py-2 fw-medium" href="#" onclick="loadPage('profil')"><i class="fas fa-user-circle fa-fw me-2 text-muted"></i> Profil Saya</a></li>
+                    <li><a class="dropdown-item rounded-3 py-2 fw-medium" href="#" onclick="loadPage('pengaturan')"><i class="fas fa-cog fa-fw me-2 text-muted"></i> Pengaturan</a></li>
+                    <li><hr class="dropdown-divider my-2"></li>
+                    <li><a class="dropdown-item text-danger rounded-3 py-2 fw-medium" href="#" onclick="logout()"><i class="fas fa-sign-out-alt fa-fw me-2"></i> Keluar</a></li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</nav>

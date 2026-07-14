@@ -1,0 +1,818 @@
+<script>
+    let sysInfo = null;
+
+    function initPengaturan() {
+        refreshSettings();
+    }
+
+    function switchSettingTab(tabId, el) {
+        // Update active menu styling
+        document.querySelectorAll('#settingsMenu .nav-link').forEach(link => {
+            link.classList.remove('active-nav');
+        });
+        if(el) {
+            el.classList.add('active-nav');
+        } else {
+            // fallback if called without 'this'
+            // find the link containing switchSettingTab(tabId
+            const links = document.querySelectorAll('#settingsMenu .nav-link');
+            for(let link of links) {
+                if(link.getAttribute('onclick') && link.getAttribute('onclick').includes(tabId)) {
+                    link.classList.add('active-nav');
+                    break;
+                }
+            }
+        }
+        
+        // Show/hide tabs
+        document.querySelectorAll('.setting-tab').forEach(tab => {
+            tab.classList.add('d-none');
+            tab.classList.remove('slide-up');
+        });
+        
+        const activeTab = document.getElementById('tab-' + tabId);
+        if(activeTab) {
+            activeTab.classList.remove('d-none');
+            // Trigger reflow to restart animation
+            void activeTab.offsetWidth;
+            activeTab.classList.add('slide-up');
+        }
+        
+        if(tabId === 'backup') {
+            loadBackups();
+        }
+    }
+
+    
+    function refreshDriveInfo() {
+        refreshSettings();
+    }
+
+    function connectDrive() {
+        showLoading('Menghubungkan Google Drive...');
+        if(typeof google !== 'undefined' && google.script) {
+            google.script.run
+                .withSuccessHandler(function(res) {
+                    hideLoading();
+                    if(res.success) {
+                        Swal.fire('Berhasil', res.message, 'success');
+                        refreshSettings();
+                    } else {
+                        Swal.fire('Gagal', res.message, 'error');
+                    }
+                })
+                .withFailureHandler(function(err) {
+                    hideLoading();
+                    Swal.fire('Error', err.message, 'error');
+                })
+                .connectDrive();
+        } else {
+            setTimeout(() => {
+                hideLoading();
+                Swal.fire('Simulasi', 'Koneksi Drive simulasi berhasil.', 'success');
+            }, 1000);
+        }
+    }
+
+    
+    function refreshStorage() {
+        refreshSettings();
+    }
+
+    function openFolder(url) {
+        if(url && url !== '#') {
+            window.open(url, '_blank');
+        }
+    }
+
+    function openDriveFolder() {
+        showLoading('Membuka folder Google Drive...');
+        const btn = document.getElementById('btn-open-drive');
+        if(btn) {
+            btn.classList.add('disabled');
+            btn.disabled = true;
+        }
+        
+        if(typeof google !== 'undefined' && google.script) {
+            google.script.run
+                .withSuccessHandler(function(res) {
+                    hideLoading();
+                    if(btn) {
+                        btn.classList.remove('disabled');
+                        btn.disabled = false;
+                    }
+                    if(res.success) {
+                        Swal.fire({
+                            toast: true,
+                            position: 'top-end',
+                            icon: 'success',
+                            title: 'Folder berhasil dibuka.',
+                            showConfirmButton: false,
+                            timer: 2000
+                        });
+                        window.open(res.url, '_blank');
+                    } else {
+                        Swal.fire(res.isWarning ? 'Peringatan' : 'Gagal', res.message, res.isWarning ? 'warning' : 'error');
+                    }
+                })
+                .withFailureHandler(function(err) {
+                    hideLoading();
+                    if(btn) {
+                        btn.classList.remove('disabled');
+                        btn.disabled = false;
+                    }
+                    Swal.fire('Error', err.message, 'error');
+                })
+                .getRootFolderUrl();
+        } else {
+            setTimeout(() => {
+                hideLoading();
+                if(btn) {
+                    btn.classList.remove('disabled');
+                    btn.disabled = false;
+                }
+                Swal.fire('Simulasi', 'Buka folder simulasi berhasil.', 'success');
+                window.open('https://drive.google.com/drive/my-drive', '_blank');
+            }, 800);
+        }
+    }
+
+    function uploadFile(base64Data, filename, folderType) {
+        return new Promise((resolve, reject) => {
+            if(typeof google !== 'undefined' && google.script) {
+                google.script.run
+                    .withSuccessHandler(res => resolve(res))
+                    .withFailureHandler(err => reject(err))
+                    .uploadFile(base64Data, filename, folderType);
+            } else {
+                resolve({ success: true, url: '#', id: 'sim-id' });
+            }
+        });
+    }
+
+    function downloadFile(fileId) {
+        return new Promise((resolve, reject) => {
+            if(typeof google !== 'undefined' && google.script) {
+                google.script.run
+                    .withSuccessHandler(res => resolve(res))
+                    .withFailureHandler(err => reject(err))
+                    .downloadFile(fileId);
+            } else {
+                resolve({ success: true, url: '#' });
+            }
+        });
+    }
+
+    function restoreDatabase(id) {
+        importSpreadsheetStr(id);
+    }
+
+    function syncDrive() {
+        showLoading('Memvalidasi dan membuat struktur folder...');
+        if(typeof google !== 'undefined' && google.script) {
+            google.script.run
+                .withSuccessHandler(function(res) {
+                    hideLoading();
+                    if(res.success) {
+                        Swal.fire('Berhasil', 'Struktur folder Drive berhasil divalidasi dan disinkronkan.', 'success');
+                        refreshSettings();
+                    } else {
+                        Swal.fire('Gagal', res.message, 'error');
+                    }
+                })
+                .withFailureHandler(function(err) {
+                    hideLoading();
+                    Swal.fire('Error', err.message, 'error');
+                })
+                .syncDrive();
+        } else {
+            setTimeout(() => {
+                hideLoading();
+                Swal.fire('Simulasi', 'Sinkronisasi Drive simulasi selesai.', 'success');
+            }, 1000);
+        }
+    }
+
+    function backupDatabaseToDrive() {
+        Swal.fire({
+            title: 'Backup Database?',
+            text: "Salinan spreadsheet saat ini akan disimpan ke folder Backup.",
+            icon: 'question',
+            showCancelButton: true,
+            confirmButtonText: 'Ya, Backup Sekarang',
+            cancelButtonText: 'Batal'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                showLoading('Membuat salinan database di Google Drive...');
+                if(typeof google !== 'undefined' && google.script) {
+                    google.script.run
+                        .withSuccessHandler(function(res) {
+                            hideLoading();
+                            if(res.success) {
+                                Swal.fire('Berhasil', res.message, 'success');
+                                refreshSettings();
+                            } else {
+                                Swal.fire('Gagal', res.message, 'error');
+                            }
+                        })
+                        .withFailureHandler(function(err) {
+                            hideLoading();
+                            Swal.fire('Error', err.message, 'error');
+                        })
+                        .backupDatabaseToDrive();
+                } else {
+                    setTimeout(() => {
+                        hideLoading();
+                        Swal.fire('Simulasi', 'Backup ke drive simulasi berhasil.', 'success');
+                    }, 1000);
+                }
+            }
+        });
+    }
+
+
+    function refreshSettings() {
+        showLoading('Memuat konfigurasi sistem...');
+        if(typeof google !== 'undefined' && google.script) {
+            google.script.run
+                .withSuccessHandler(function(res) {
+                    hideLoading();
+                    sysInfo = res;
+                    renderSettings(res);
+                })
+                .withFailureHandler(function(err) {
+                    hideLoading();
+                    showAlert('Error', err.message, 'error');
+                })
+                .initializeSystem();
+        } else {
+            // Local dev stub
+            setTimeout(() => {
+                hideLoading();
+                sysInfo = {
+                    account: { email: 'developer@example.com', name: 'Developer', lastLogin: new Date().toISOString() },
+                    database: { id: '1234567890abcdef', name: 'DB Lokal Dev', url: '#', sheetCount: 12, status: 'Terhubung' },
+                    system: { appVersion: '1.0.0', installDate: new Date().toISOString(), setupStatus: 'Initialized', stats: { guru: 10, siswa: 300, kelas: 12, mapel: 15, tableCount: 12 } },
+                    appConfig: { NamaSekolah: 'SMA N 1 Lokal', SemesterAktif: 'Ganjil', TahunAjaran: '2026/2027', Tema: 'light' }
+                };
+                renderSettings(sysInfo);
+            }, 500);
+        }
+    }
+
+    function renderSettings(info) {
+        // Tab Akun
+        if (document.getElementById('lbl-acc-email')) if(document.getElementById('lbl-acc-email')) if(document.getElementById('lbl-acc-email')) if(document.getElementById('lbl-acc-email')) if(document.getElementById('lbl-acc-email')) document.getElementById('lbl-acc-email').textContent = info.account.email;
+        if (document.getElementById('lbl-acc-name')) if(document.getElementById('lbl-acc-name')) if(document.getElementById('lbl-acc-name')) if(document.getElementById('lbl-acc-name')) if(document.getElementById('lbl-acc-name')) document.getElementById('lbl-acc-name').textContent = info.account.name;
+        if (document.getElementById('lbl-acc-lastlogin')) if(document.getElementById('lbl-acc-lastlogin')) if(document.getElementById('lbl-acc-lastlogin')) if(document.getElementById('lbl-acc-lastlogin')) if(document.getElementById('lbl-acc-lastlogin')) document.getElementById('lbl-acc-lastlogin').textContent = new Date(info.account.lastLogin).toLocaleString('id-ID');
+
+        // Tab DB
+        const dbStatus = document.getElementById('db-status-badge');
+        if(info.database && info.database.id && info.database.id !== 'YOUR_SPREADSHEET_ID_HERE') {
+            dbStatus.className = 'badge bg-success rounded-pill px-2 py-1';
+            dbStatus.innerHTML = '<i class="fas fa-check-circle me-1"></i> Terhubung';
+            if(document.getElementById('lbl-db-name')) document.getElementById('lbl-db-name').innerText = info.database.name || 'Google Spreadsheet';
+            if(document.getElementById('db-id-text')) document.getElementById('db-id-text').innerText = info.database.id;
+            
+            if(document.getElementById('lbl-db-sheets')) {
+                if(document.getElementById('lbl-db-sheets')) if(document.getElementById('lbl-db-sheets')) if(document.getElementById('lbl-db-sheets')) if(document.getElementById('lbl-db-sheets')) document.getElementById('lbl-db-sheets').textContent = info.database.sheetCount || info.system.stats.tableCount || '12';
+            }
+            if(document.getElementById('lbl-db-connected')) {
+                if(document.getElementById('lbl-db-connected')) if(document.getElementById('lbl-db-connected')) if(document.getElementById('lbl-db-connected')) if(document.getElementById('lbl-db-connected')) document.getElementById('lbl-db-connected').textContent = info.system.installDate ? new Date(info.system.installDate).toLocaleString('id-ID') : '-';
+            }
+            if(document.getElementById('lbl-db-version')) { if(document.getElementById('lbl-db-version')) if(document.getElementById('lbl-db-version')) if(document.getElementById('lbl-db-version')) if(document.getElementById('lbl-db-version')) document.getElementById('lbl-db-version').textContent = info.system.dbVersion || '1.0.0'; }
+            if(document.getElementById('lbl-db-sync')) {
+                if(document.getElementById('lbl-db-sync')) if(document.getElementById('lbl-db-sync')) if(document.getElementById('lbl-db-sync')) if(document.getElementById('lbl-db-sync')) document.getElementById('lbl-db-sync').textContent = info.system.lastSync ? new Date(info.system.lastSync).toLocaleString('id-ID') : '-';
+            }
+            if(document.getElementById('btn-open-db') && info.database.url) {
+                document.getElementById('btn-open-db').href = info.database.url;
+                document.getElementById('btn-open-db').classList.remove('disabled');
+            }
+            if(document.getElementById('btn-disconnect-db')) {
+                document.getElementById('btn-disconnect-db').classList.remove('d-none');
+            }
+            const testBtn = document.querySelector('button[onclick="testConnection()"]');
+            if(testBtn) testBtn.classList.remove('disabled');
+        } else {
+            dbStatus.className = 'badge bg-danger rounded-pill px-2 py-1';
+            dbStatus.innerHTML = '<i class="fas fa-times-circle me-1"></i> Tidak Terhubung';
+            if(document.getElementById('lbl-db-name')) document.getElementById('lbl-db-name').innerText = 'Belum Ada Database';
+            if(document.getElementById('db-id-text')) document.getElementById('db-id-text').innerText = 'Belum terhubung';
+            
+            if(document.getElementById('lbl-db-sheets')) if(document.getElementById('lbl-db-sheets')) if(document.getElementById('lbl-db-sheets')) if(document.getElementById('lbl-db-sheets')) if(document.getElementById('lbl-db-sheets')) document.getElementById('lbl-db-sheets').textContent = '0';
+            if(document.getElementById('lbl-db-connected')) if(document.getElementById('lbl-db-connected')) if(document.getElementById('lbl-db-connected')) if(document.getElementById('lbl-db-connected')) if(document.getElementById('lbl-db-connected')) document.getElementById('lbl-db-connected').textContent = '-';
+            if(document.getElementById('lbl-db-sync')) if(document.getElementById('lbl-db-sync')) if(document.getElementById('lbl-db-sync')) if(document.getElementById('lbl-db-sync')) if(document.getElementById('lbl-db-sync')) document.getElementById('lbl-db-sync').textContent = '-';
+            if(document.getElementById('lbl-db-version')) if(document.getElementById('lbl-db-version')) if(document.getElementById('lbl-db-version')) if(document.getElementById('lbl-db-version')) if(document.getElementById('lbl-db-version')) document.getElementById('lbl-db-version').textContent = '-';
+            if(document.getElementById('btn-open-db')) document.getElementById('btn-open-db').classList.add('disabled');
+            if(document.getElementById('btn-disconnect-db')) {
+                document.getElementById('btn-disconnect-db').classList.add('d-none');
+            }
+            const testBtn = document.querySelector('button[onclick="testConnection()"]');
+            if(testBtn) testBtn.classList.add('disabled');
+        }
+        
+        // Tab Drive
+        const driveStatus = document.getElementById('drive-status-badge');
+        if(info.drive && info.drive.status === 'Connected') {
+            driveStatus.className = 'badge bg-success rounded-pill px-2 py-1';
+            driveStatus.innerHTML = '<i class="fas fa-check-circle me-1"></i> Terhubung';
+            if(document.getElementById('lbl-drive-name')) document.getElementById('lbl-drive-name').innerText = 'Sistem Mengajar Guru';
+            if(document.getElementById('drive-id-text')) document.getElementById('drive-id-text').innerText = info.drive.rootId;
+            
+            if(document.getElementById('lbl-drive-folders')) if(document.getElementById('lbl-drive-folders')) if(document.getElementById('lbl-drive-folders')) if(document.getElementById('lbl-drive-folders')) document.getElementById('lbl-drive-folders').textContent = info.drive.stats.folders;
+            if(document.getElementById('lbl-drive-files')) if(document.getElementById('lbl-drive-files')) if(document.getElementById('lbl-drive-files')) if(document.getElementById('lbl-drive-files')) document.getElementById('lbl-drive-files').textContent = info.drive.stats.files;
+            if(document.getElementById('lbl-drive-used')) if(document.getElementById('lbl-drive-used')) if(document.getElementById('lbl-drive-used')) if(document.getElementById('lbl-drive-used')) document.getElementById('lbl-drive-used').textContent = info.drive.stats.storageUsed;
+            if(document.getElementById('lbl-drive-sync')) if(document.getElementById('lbl-drive-sync')) if(document.getElementById('lbl-drive-sync')) if(document.getElementById('lbl-drive-sync')) document.getElementById('lbl-drive-sync').textContent = info.drive.lastSync !== '-' ? new Date(info.drive.lastSync).toLocaleString('id-ID') : '-';
+            
+            document.getElementById('btn-open-drive').classList.remove('disabled');
+            document.getElementById('btn-open-drive').disabled = false;
+        } else {
+            driveStatus.className = 'badge bg-danger rounded-pill px-2 py-1';
+            driveStatus.innerHTML = '<i class="fas fa-times-circle me-1"></i> Tidak Terhubung';
+            if(document.getElementById('lbl-drive-name')) document.getElementById('lbl-drive-name').innerText = 'Belum Terhubung';
+            if(document.getElementById('drive-id-text')) document.getElementById('drive-id-text').innerText = '-';
+            
+            if(document.getElementById('lbl-drive-folders')) if(document.getElementById('lbl-drive-folders')) if(document.getElementById('lbl-drive-folders')) if(document.getElementById('lbl-drive-folders')) document.getElementById('lbl-drive-folders').textContent = '0';
+            if(document.getElementById('lbl-drive-files')) if(document.getElementById('lbl-drive-files')) if(document.getElementById('lbl-drive-files')) if(document.getElementById('lbl-drive-files')) document.getElementById('lbl-drive-files').textContent = '0';
+            if(document.getElementById('lbl-drive-used')) if(document.getElementById('lbl-drive-used')) if(document.getElementById('lbl-drive-used')) if(document.getElementById('lbl-drive-used')) document.getElementById('lbl-drive-used').textContent = '0 MB';
+            if(document.getElementById('lbl-drive-sync')) if(document.getElementById('lbl-drive-sync')) if(document.getElementById('lbl-drive-sync')) if(document.getElementById('lbl-drive-sync')) document.getElementById('lbl-drive-sync').textContent = '-';
+            
+            document.getElementById('btn-open-drive').classList.add('disabled');
+            document.getElementById('btn-open-drive').disabled = true;
+        }
+        
+        // Tab Sys
+        if(document.getElementById('sys-guru')) if(document.getElementById('sys-guru')) if(document.getElementById('sys-guru')) if(document.getElementById('sys-guru')) document.getElementById('sys-guru').textContent = info.system.stats.guru;
+        if(document.getElementById('sys-siswa')) if(document.getElementById('sys-siswa')) if(document.getElementById('sys-siswa')) if(document.getElementById('sys-siswa')) document.getElementById('sys-siswa').textContent = info.system.stats.siswa;
+        if(document.getElementById('sys-kelas')) if(document.getElementById('sys-kelas')) if(document.getElementById('sys-kelas')) if(document.getElementById('sys-kelas')) document.getElementById('sys-kelas').textContent = info.system.stats.kelas;
+        if(document.getElementById('sys-mapel')) if(document.getElementById('sys-mapel')) if(document.getElementById('sys-mapel')) if(document.getElementById('sys-mapel')) document.getElementById('sys-mapel').textContent = info.system.stats.mapel;
+        if(document.getElementById('sys-version')) if(document.getElementById('sys-version')) if(document.getElementById('sys-version')) if(document.getElementById('sys-version')) document.getElementById('sys-version').textContent = info.system.appVersion;
+        if(document.getElementById('sys-installDate')) if(document.getElementById('sys-installDate')) if(document.getElementById('sys-installDate')) if(document.getElementById('sys-installDate')) document.getElementById('sys-installDate').textContent = new Date(info.system.installDate).toLocaleString('id-ID');
+        if(document.getElementById('sys-setupStatus')) if(document.getElementById('sys-setupStatus')) if(document.getElementById('sys-setupStatus')) if(document.getElementById('sys-setupStatus')) document.getElementById('sys-setupStatus').textContent = info.system.setupStatus;
+
+        // Tab App
+        if(info.appConfig) {
+            if(document.getElementById('conf-namaSekolah')) if(document.getElementById('conf-namaSekolah')) if(document.getElementById('conf-namaSekolah')) document.getElementById('conf-namaSekolah').value = info.appConfig.NamaSekolah || '';
+            if(document.getElementById('conf-semester')) if(document.getElementById('conf-semester')) if(document.getElementById('conf-semester')) document.getElementById('conf-semester').value = info.appConfig.SemesterAktif || 'Ganjil';
+            if(document.getElementById('conf-tahunAjaran')) if(document.getElementById('conf-tahunAjaran')) if(document.getElementById('conf-tahunAjaran')) document.getElementById('conf-tahunAjaran').value = info.appConfig.TahunAjaran || '';
+            if(document.getElementById('conf-tema')) if(document.getElementById('conf-tema')) if(document.getElementById('conf-tema')) if(document.getElementById('conf-tema')) document.getElementById('conf-tema').value = info.appConfig.Tema || 'light';
+        }
+    }
+
+    function createNewDb() {
+        Swal.fire({
+            title: 'Konfigurasi Spreadsheet Saat Ini?',
+            text: 'Sistem akan menginisialisasi file Spreadsheet aktif ini dengan struktur standar.',
+            icon: 'question',
+            showCancelButton: true,
+            confirmButtonText: 'Ya, Konfigurasi',
+            cancelButtonText: 'Batal'
+        }).then((result) => {
+            if(result.isConfirmed) {
+                showLoading('Menginisialisasi Spreadsheet...');
+                if(typeof google !== 'undefined' && google.script) {
+                    google.script.run
+                        .withSuccessHandler(function(res) {
+                            if(res.success) {
+                                showAlert('Berhasil', res.message, 'success');
+                                refreshSettings();
+                            } else {
+                                hideLoading();
+                                showAlert('Gagal', res.message, 'error');
+                            }
+                        })
+                        .withFailureHandler(function(err) {
+                            hideLoading();
+                            showAlert('Error Server', err.message, 'error');
+                        })
+                        .createDatabase();
+                } else {
+                    setTimeout(() => {
+                        hideLoading();
+                        showAlert('Berhasil', 'Spreadsheet berhasil dikonfigurasi (Simulasi)', 'success');
+                    }, 1000);
+                }
+            }
+        });
+    }
+
+    
+    let connectModalInstance = null;
+
+    function openConnectDatabaseModal() {
+        if (!connectModalInstance) {
+            connectModalInstance = new bootstrap.Modal(document.getElementById('connectDatabaseModal'));
+        }
+        if(document.getElementById('dbUrlInput')) if(document.getElementById('dbUrlInput')) if(document.getElementById('dbUrlInput')) document.getElementById('dbUrlInput').value = '';
+        if(document.getElementById('dbIdInput')) if(document.getElementById('dbIdInput')) if(document.getElementById('dbIdInput')) document.getElementById('dbIdInput').value = '';
+        document.getElementById('dbValidationProgressContainer').classList.add('d-none');
+        document.getElementById('btnConnectDb').disabled = false;
+        
+        // Cek jika sudah ada database
+        const dbIdText = document.getElementById('db-id-text').innerText;
+        if (dbIdText && dbIdText !== 'Memuat ID...' && dbIdText !== '-' && dbIdText !== 'Belum terhubung') {
+            Swal.fire({
+                title: 'Ganti Database?',
+                text: "Anda sudah terhubung ke sebuah database. Mengganti database akan mengubah seluruh sumber data aplikasi. Lanjutkan?",
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#3085d6',
+                cancelButtonColor: '#d33',
+                confirmButtonText: 'Ya, Ganti',
+                cancelButtonText: 'Batal'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    connectModalInstance.show();
+                }
+            });
+        } else {
+            connectModalInstance.show();
+        }
+    }
+
+    function extractSpreadsheetId(input) {
+        if (!input) return null;
+        input = input.trim();
+        // If it's a full URL
+        if (input.includes('/d/')) {
+            try {
+                const parts = input.split('/d/');
+                if (parts.length > 1) {
+                    return parts[1].split('/')[0];
+                }
+            } catch(e) { return null; }
+        }
+        // If it looks like an ID directly
+        if (/^[a-zA-Z0-9-_]{30,}$/.test(input)) {
+            return input;
+        }
+        return null;
+    }
+
+    function connectDatabase() {
+        // Determine which tab is active
+        const urlTabActive = document.getElementById('url-tab').classList.contains('active');
+        let inputValue = '';
+        
+        if (urlTabActive) {
+            inputValue = document.getElementById('dbUrlInput').value;
+        } else {
+            inputValue = document.getElementById('dbIdInput').value;
+        }
+        
+        const sheetId = extractSpreadsheetId(inputValue);
+        
+        if (!sheetId) {
+            Swal.fire('Input Tidak Valid', 'Pastikan Anda memasukkan URL atau Spreadsheet ID yang valid.', 'error');
+            return;
+        }
+        
+        // UI updates for loading
+        document.getElementById('btnConnectDb').disabled = true;
+        const progressContainer = document.getElementById('dbValidationProgressContainer');
+        progressContainer.classList.remove('d-none');
+        if(document.getElementById('dbValidationProgressText')) document.getElementById('dbValidationProgressText').innerText = 'Menghubungkan ke Spreadsheet...';
+        
+        if(typeof google !== 'undefined' && google.script) {
+            google.script.run
+                .withSuccessHandler(function(res) {
+                    document.getElementById('btnConnectDb').disabled = false;
+                    progressContainer.classList.add('d-none');
+                    connectModalInstance.hide();
+                    
+                    if(res.success) {
+                        if(res.validation && !res.validation.valid) {
+                            Swal.fire({
+                                title: 'Struktur Belum Lengkap',
+                                text: res.message,
+                                icon: 'warning',
+                                showCancelButton: true,
+                                confirmButtonText: 'Perbaiki Otomatis',
+                                cancelButtonText: 'Batal'
+                            }).then((r) => {
+                                if(r.isConfirmed) {
+                                    doFixDB();
+                                } else {
+                                    refreshSettings();
+                                }
+                            });
+                        } else {
+                            Swal.fire('Berhasil', res.message, 'success');
+                            refreshSettings();
+                        }
+                    } else {
+                        Swal.fire('Koneksi Gagal', res.message || 'Periksa kembali Spreadsheet ID atau hak akses.', 'error');
+                    }
+                })
+                .withFailureHandler(function(err) {
+                    document.getElementById('btnConnectDb').disabled = false;
+                    progressContainer.classList.add('d-none');
+                    connectModalInstance.hide();
+                    Swal.fire('Error Sistem', err.message || 'Gagal menghubungi server.', 'error');
+                })
+                .importSpreadsheet(sheetId);
+        } else {
+            setTimeout(() => {
+                document.getElementById('btnConnectDb').disabled = false;
+                progressContainer.classList.add('d-none');
+                connectModalInstance.hide();
+                Swal.fire('Simulasi Berhasil', 'Fitur ini berjalan di lingkungan GAS sebenarnya.', 'success');
+            }, 1500);
+        }
+    }
+
+    function testConnection() {
+        showLoading('Menguji koneksi database...');
+        if(typeof google !== 'undefined' && google.script) {
+            google.script.run
+                .withSuccessHandler(function(res) {
+                    hideLoading();
+                    if(res.success) {
+                        Swal.fire('Berhasil', 'Koneksi database berhasil dan dapat ditulis/dibaca.', 'success');
+                    } else {
+                        Swal.fire('Gagal', res.message || 'Koneksi database bermasalah.', 'error');
+                    }
+                })
+                .withFailureHandler(function(err) {
+                    hideLoading();
+                    Swal.fire('Error', err.message, 'error');
+                })
+                .testDatabaseConnection();
+        } else {
+            setTimeout(() => {
+                hideLoading();
+                Swal.fire('Simulasi', 'Koneksi simulasi berhasil.', 'success');
+            }, 1000);
+        }
+    }
+
+    function promptCreateNewDb() {
+        Swal.fire({
+            title: 'Konfigurasi Spreadsheet Saat Ini?',
+            text: "Sistem akan menginisialisasi file Spreadsheet aktif ini sebagai database sistem.",
+            icon: 'question',
+            showCancelButton: true,
+            confirmButtonText: 'Ya, Konfigurasi',
+            cancelButtonText: 'Batal'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                showLoading('Menginisialisasi Spreadsheet...');
+                if(typeof google !== 'undefined' && google.script) {
+                    google.script.run
+                        .withSuccessHandler(function(res) {
+                            hideLoading();
+                            if(res.success) {
+                                Swal.fire('Berhasil', 'Spreadsheet aktif berhasil dikonfigurasi.', 'success');
+                                refreshSettings();
+                            } else {
+                                Swal.fire('Gagal', res.message, 'error');
+                            }
+                        })
+                        .withFailureHandler(function(err) {
+                            hideLoading();
+                            Swal.fire('Error', err.message, 'error');
+                        })
+                        .createDatabase();
+                } else {
+                    setTimeout(() => {
+                        hideLoading();
+                        Swal.fire('Berhasil', 'Simulasi konfigurasi spreadsheet.', 'success');
+                    }, 1500);
+                }
+            }
+        });
+    }
+
+    function disconnectDatabase() {
+        Swal.fire({
+            title: 'Putuskan Koneksi?',
+            text: "Database tidak akan dihapus. Hanya koneksi aplikasi yang akan dilepas. Lanjutkan?",
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#d33',
+            cancelButtonColor: '#3085d6',
+            confirmButtonText: 'Ya, Putuskan',
+            cancelButtonText: 'Batal'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                showLoading('Memutuskan koneksi database...');
+                if(typeof google !== 'undefined' && google.script) {
+                    google.script.run
+                        .withSuccessHandler(function(res) {
+                            hideLoading();
+                            if(res.success) {
+                                Swal.fire('Berhasil', 'Koneksi database berhasil diputus.', 'success');
+                                refreshSettings();
+                            } else {
+                                Swal.fire('Gagal', res.message, 'error');
+                            }
+                        })
+                        .withFailureHandler(function(err) {
+                            hideLoading();
+                            Swal.fire('Error', err.message, 'error');
+                        })
+                        .disconnectDatabase();
+                } else {
+                    setTimeout(() => {
+                        hideLoading();
+                        Swal.fire('Berhasil', 'Simulasi koneksi diputus.', 'success');
+                        // Simulation state reset...
+                    }, 1000);
+                }
+            }
+        });
+    }
+
+    function validateDB() {
+        showLoading('Memvalidasi struktur database...');
+        if(typeof google !== 'undefined' && google.script) {
+            google.script.run
+                .withSuccessHandler(function(res) {
+                    hideLoading();
+                    if(res.valid) {
+                        showAlert('Valid', res.message, 'success');
+                    } else {
+                        Swal.fire({
+                            title: 'Ditemukan Masalah',
+                            text: res.message,
+                            icon: 'warning',
+                            showCancelButton: true,
+                            confirmButtonText: 'Perbaiki Otomatis',
+                            cancelButtonText: 'Tutup'
+                        }).then((r) => {
+                            if(r.isConfirmed) doFixDB();
+                        });
+                    }
+                })
+                .withFailureHandler(function(err) {
+                    hideLoading();
+                    showAlert('Error', err.message, 'error');
+                })
+                .validateDatabase();
+        } else {
+            setTimeout(() => { hideLoading(); showAlert('Valid', 'Database valid (Simulasi)', 'success'); }, 800);
+        }
+    }
+
+    function doFixDB() {
+        showLoading('Memperbaiki database...');
+        if(typeof google !== 'undefined' && google.script) {
+            google.script.run
+                .withSuccessHandler(function(res) {
+                    hideLoading();
+                    if(res.success) {
+                        showAlert('Berhasil', res.message, 'success');
+                        refreshSettings();
+                    } else {
+                        showAlert('Gagal', res.message, 'error');
+                    }
+                })
+                .withFailureHandler(function(err) {
+                    hideLoading();
+                    showAlert('Error', err.message, 'error');
+                })
+                .fixDatabase();
+        }
+    }
+
+    function copyDbId() {
+        const idInput = document.getElementById('lbl-db-id');
+        idInput.select();
+        document.execCommand('copy');
+        Swal.fire({
+            toast: true, position: 'top-end', icon: 'success', title: 'ID disalin!', showConfirmButton: false, timer: 1500
+        });
+    }
+
+    function loadBackups() {
+        const tbody = document.getElementById('tbl-backups');
+        tbody.innerHTML = '<tr><td colspan="3" class="text-center py-4 text-muted">Memuat daftar backup...</td></tr>';
+        
+        if(typeof google !== 'undefined' && google.script) {
+            google.script.run
+                .withSuccessHandler(function(res) {
+                    if(res.success) {
+                        if(res.backups.length === 0) {
+                            tbody.innerHTML = '<tr><td colspan="3" class="text-center py-4 text-muted">Belum ada file backup.</td></tr>';
+                            return;
+                        }
+                        tbody.innerHTML = res.backups.map(b => `
+                            <tr>
+                                <td class="ps-4 fw-medium text-dark"><i class="fas fa-file-excel text-success me-2"></i> ${b.name}</td>
+                                <td><span class="badge bg-light text-dark border">${new Date(b.date).toLocaleString('id-ID')}</span></td>
+                                <td class="text-end pe-4">
+                                    <button class="btn btn-sm btn-outline-success me-1" onclick="window.open('${b.url}', '_blank')" title="Buka File"><i class="fas fa-external-link-alt"></i></button>
+                                    <button class="btn btn-sm btn-outline-primary" onclick="importSpreadsheetStr('${b.id}')" title="Restore ke Backup ini"><i class="fas fa-history"></i></button>
+                                </td>
+                            </tr>
+                        `).join('');
+                    } else {
+                        tbody.innerHTML = `<tr><td colspan="3" class="text-center py-4 text-danger">${res.message}</td></tr>`;
+                    }
+                })
+                .withFailureHandler(function(err) {
+                    tbody.innerHTML = `<tr><td colspan="3" class="text-center py-4 text-danger">${err.message}</td></tr>`;
+                })
+                .getAvailableBackups();
+        } else {
+            setTimeout(() => {
+                tbody.innerHTML = '<tr><td colspan="3" class="text-center py-4 text-muted">Tidak ada data backup (Simulasi)</td></tr>';
+            }, 500);
+        }
+    }
+
+    function importSpreadsheetStr(id) {
+        Swal.fire({
+            title: 'Restore Backup?',
+            text: 'Aplikasi akan menggunakan file backup ini sebagai database utama.',
+            icon: 'question',
+            showCancelButton: true,
+            confirmButtonText: 'Ya, Restore',
+            cancelButtonText: 'Batal'
+        }).then((result) => {
+            if(result.isConfirmed) {
+                showLoading('Merestore database...');
+                if(typeof google !== 'undefined' && google.script) {
+                    google.script.run
+                        .withSuccessHandler(function(res) {
+                            hideLoading();
+                            if(res.success) {
+                                showAlert('Berhasil', 'Backup berhasil direstore dan dihubungkan.', 'success');
+                                refreshSettings();
+                            } else {
+                                showAlert('Gagal', res.message, 'error');
+                            }
+                        })
+                        .withFailureHandler(function(err) {
+                            hideLoading();
+                            showAlert('Error', err.message, 'error');
+                        })
+                        .importSpreadsheet(id);
+                }
+            }
+        });
+    }
+
+    function doBackup() {
+        showLoading('Membuat salinan database...');
+        if(typeof google !== 'undefined' && google.script) {
+            google.script.run
+                .withSuccessHandler(function(res) {
+                    hideLoading();
+                    if(res.success) {
+                        Swal.fire({
+                            title: 'Backup Berhasil',
+                            text: res.message,
+                            icon: 'success',
+                            confirmButtonText: 'Buka File Backup',
+                            showCancelButton: true,
+                            cancelButtonText: 'Tutup'
+                        }).then((r) => {
+                            if(r.isConfirmed) window.open(res.fileUrl, '_blank');
+                            loadBackups();
+                        });
+                    } else {
+                        showAlert('Gagal', res.message, 'error');
+                    }
+                })
+                .withFailureHandler(function(err) {
+                    hideLoading();
+                    showAlert('Error', err.message, 'error');
+                })
+                .backupDatabaseToDrive();
+        } else {
+            setTimeout(() => { hideLoading(); showAlert('Berhasil', 'Backup dibuat (Simulasi)', 'success'); loadBackups(); }, 1500);
+        }
+    }
+
+    function saveConfigBtn() {
+        const conf = {
+            NamaSekolah: document.getElementById('conf-namaSekolah').value,
+            SemesterAktif: document.getElementById('conf-semester').value,
+            TahunAjaran: document.getElementById('conf-tahunAjaran').value,
+            Tema: document.getElementById('conf-tema') ? document.getElementById('conf-tema').value : 'light'
+        };
+
+        showLoading('Menyimpan pengaturan...');
+        if(typeof google !== 'undefined' && google.script) {
+            google.script.run
+                .withSuccessHandler(function(res) {
+                    hideLoading();
+                    if(res.success) {
+                        showAlert('Berhasil', res.message, 'success');
+                        refreshSettings();
+                    } else {
+                        showAlert('Gagal', res.message, 'error');
+                    }
+                })
+                .withFailureHandler(function(err) {
+                    hideLoading();
+                    showAlert('Error', err.message, 'error');
+                })
+                .saveAppConfig(conf);
+        } else {
+            setTimeout(() => { hideLoading(); showAlert('Berhasil', 'Pengaturan disimpan (Simulasi)', 'success'); }, 800);
+        }
+    }
+
+</script>

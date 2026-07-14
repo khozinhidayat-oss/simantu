@@ -1,0 +1,201 @@
+<script>
+    var currentMapelData = [];
+
+    function initMapel() {
+        showLoading('Memuat Mata Pelajaran...');
+        if(typeof google !== 'undefined' && google.script) {
+            google.script.run
+                .withSuccessHandler((res) => {
+                    hideLoading();
+                    if(res.success) {
+                        currentMapelData = res.data;
+                        renderTableMapel();
+                    } else {
+                        if(document.getElementById('mapelTableBody')) if(document.getElementById('mapelTableBody')) if(document.getElementById('mapelTableBody')) document.getElementById('mapelTableBody').innerHTML = `<tr><td colspan="7" class="text-center text-danger py-4">${res.message}</td></tr>`;
+                    }
+                })
+                .withFailureHandler(err => {
+                    hideLoading();
+                    if(document.getElementById('mapelTableBody')) if(document.getElementById('mapelTableBody')) if(document.getElementById('mapelTableBody')) document.getElementById('mapelTableBody').innerHTML = `<tr><td colspan="7" class="text-center text-danger py-4">${err.message}</td></tr>`;
+                })
+                .getMapelData();
+        } else {
+            setTimeout(() => {
+                hideLoading();
+                currentMapelData = [
+                    { id: 'M01', kode: 'MTK-W', nama: 'Matematika Wajib', fase: 'E', semester: 'Ganjil', kkm: 75, jam: 4, status: 'Aktif' },
+                    { id: 'M02', kode: 'MTK-P', nama: 'Matematika Peminatan', fase: 'F', semester: 'Ganjil', kkm: 78, jam: 4, status: 'Aktif' },
+                    { id: 'M03', kode: 'FIS', nama: 'Fisika', fase: 'F', semester: 'Ganjil', kkm: 75, jam: 4, status: 'Aktif' }
+                ];
+                renderTableMapel();
+            }, 500);
+        }
+
+        document.getElementById('searchMapel').addEventListener('keyup', renderTableMapel);
+    }
+
+    function renderTableMapel() {
+        const tbody = document.getElementById('mapelTableBody');
+        const searchMapel = document.getElementById('searchMapel').value.toLowerCase();
+        
+        let html = '';
+        let filtered = currentMapelData;
+
+        if (searchMapel) {
+            filtered = filtered.filter(m => m.nama.toLowerCase().includes(searchMapel) || m.kode.toLowerCase().includes(searchMapel));
+        }
+        
+        if(filtered.length === 0) {
+            html = `<tr><td colspan="7" class="text-center text-muted py-4">Tidak ada data mata pelajaran yang sesuai.</td></tr>`;
+        } else {
+            filtered.forEach((item, index) => {
+                html += `
+                    <tr>
+                        <td class="ps-4 text-muted">${index + 1}</td>
+                        <td><span class="badge bg-light text-dark border font-monospace px-2 py-1">${item.kode}</span></td>
+                        <td class="fw-bold text-dark">${item.nama}</td>
+                        <td class="text-center">
+                            <div class="text-dark fw-medium">Fase ${item.fase}</div>
+                            <div class="text-muted" style="font-size: 12px;">Semester ${item.semester}</div>
+                        </td>
+                        <td class="text-center"><span class="badge bg-success bg-opacity-10 text-success px-2 py-1 fs-6">${item.kkm}</span></td>
+                        <td class="text-center text-muted">${item.jam} JP</td>
+                        <td class="pe-4 text-end">
+                            <div class="d-flex justify-content-end gap-1">
+                                <button class="btn btn-sm btn-light border text-primary" onclick="editMapel('${item.id}')" title="Edit">
+                                    <i class="fas fa-edit"></i>
+                                </button>
+                                <button class="btn btn-sm btn-light border text-danger" onclick="hapusMapel('${item.id}')" title="Hapus">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                `;
+            });
+        }
+        
+        tbody.innerHTML = html;
+    }
+
+    var modalMapelInstance = null;
+
+    function showModalMapel() {
+        document.getElementById('formMapel').reset();
+        if(document.getElementById('mapelId')) if(document.getElementById('mapelId')) if(document.getElementById('mapelId')) document.getElementById('mapelId').value = '';
+        if(document.getElementById('modalMapelLabel')) if(document.getElementById('modalMapelLabel')) if(document.getElementById('modalMapelLabel')) document.getElementById('modalMapelLabel').textContent = 'Tambah Mapel Baru';
+        
+        if(!modalMapelInstance) {
+            modalMapelInstance = new bootstrap.Modal(document.getElementById('modalMapel'));
+        }
+        modalMapelInstance.show();
+    }
+
+    function editMapel(id) {
+        const mapel = currentMapelData.find(m => m.id === id);
+        if(!mapel) return;
+
+        if(document.getElementById('mapelId')) if(document.getElementById('mapelId')) if(document.getElementById('mapelId')) document.getElementById('mapelId').value = mapel.id;
+        if(document.getElementById('mapelKode')) if(document.getElementById('mapelKode')) if(document.getElementById('mapelKode')) document.getElementById('mapelKode').value = mapel.kode;
+        if(document.getElementById('mapelNama')) if(document.getElementById('mapelNama')) if(document.getElementById('mapelNama')) document.getElementById('mapelNama').value = mapel.nama;
+        if(document.getElementById('mapelFase')) if(document.getElementById('mapelFase')) if(document.getElementById('mapelFase')) document.getElementById('mapelFase').value = mapel.fase;
+        if(document.getElementById('mapelSemester')) if(document.getElementById('mapelSemester')) if(document.getElementById('mapelSemester')) document.getElementById('mapelSemester').value = mapel.semester;
+        if(document.getElementById('mapelKkm')) if(document.getElementById('mapelKkm')) if(document.getElementById('mapelKkm')) document.getElementById('mapelKkm').value = mapel.kkm;
+        if(document.getElementById('mapelJam')) if(document.getElementById('mapelJam')) if(document.getElementById('mapelJam')) document.getElementById('mapelJam').value = mapel.jam;
+        if(document.getElementById('mapelStatus')) if(document.getElementById('mapelStatus')) if(document.getElementById('mapelStatus')) document.getElementById('mapelStatus').value = mapel.status;
+
+        if(document.getElementById('modalMapelLabel')) if(document.getElementById('modalMapelLabel')) if(document.getElementById('modalMapelLabel')) document.getElementById('modalMapelLabel').textContent = 'Edit Mapel';
+        
+        if(!modalMapelInstance) {
+            modalMapelInstance = new bootstrap.Modal(document.getElementById('modalMapel'));
+        }
+        modalMapelInstance.show();
+    }
+
+    function simpanMapel() {
+        const form = document.getElementById('formMapel');
+        if(!form.checkValidity()) {
+            form.reportValidity();
+            return;
+        }
+
+        const id = document.getElementById('mapelId').value;
+        const payload = {
+            id: id || 'M' + new Date().getTime(),
+            kode: document.getElementById('mapelKode').value,
+            nama: document.getElementById('mapelNama').value,
+            fase: document.getElementById('mapelFase').value,
+            semester: document.getElementById('mapelSemester').value,
+            kkm: document.getElementById('mapelKkm').value,
+            jam: document.getElementById('mapelJam').value,
+            status: document.getElementById('mapelStatus').value
+        };
+
+        modalMapelInstance.hide();
+        showLoading('Menyimpan Mapel...');
+
+        if(typeof google !== 'undefined' && google.script) {
+            google.script.run
+                .withSuccessHandler((res) => {
+                    hideLoading();
+                    if(res.success) {
+                        showAlert('Sukses', res.message, 'success');
+                        initMapel();
+                    } else {
+                        showAlert('Gagal', res.message, 'error');
+                    }
+                })
+                .saveMapel(payload);
+        } else {
+            setTimeout(() => {
+                hideLoading();
+                if(id) {
+                    const idx = currentMapelData.findIndex(m => m.id === id);
+                    if(idx !== -1) currentMapelData[idx] = payload;
+                } else {
+                    currentMapelData.push(payload);
+                }
+                renderTableMapel();
+                showAlert('Berhasil', 'Mapel berhasil disimpan (Preview Mode).', 'success');
+            }, 600);
+        }
+    }
+
+    function hapusMapel(id) {
+        Swal.fire({
+            title: 'Hapus Mapel?',
+            text: "Data mapel yang dihapus tidak dapat dikembalikan!",
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#dc3545',
+            cancelButtonColor: '#6c757d',
+            confirmButtonText: 'Ya, Hapus!',
+            cancelButtonText: 'Batal',
+            reverseButtons: true
+        }).then((result) => {
+            if (result.isConfirmed) {
+                showLoading('Menghapus...');
+                if(typeof google !== 'undefined' && google.script) {
+                    google.script.run
+                        .withSuccessHandler((res) => {
+                            hideLoading();
+                            if(res.success) {
+                                showAlert('Terhapus', res.message, 'success');
+                                initMapel();
+                            } else {
+                                showAlert('Gagal', res.message, 'error');
+                            }
+                        })
+                        .deleteMapel(id);
+                } else {
+                    setTimeout(() => {
+                        hideLoading();
+                        currentMapelData = currentMapelData.filter(m => m.id !== id);
+                        renderTableMapel();
+                        showAlert('Terhapus', 'Mapel berhasil dihapus (Preview Mode).', 'success');
+                    }, 600);
+                }
+            }
+        });
+    }
+</script>

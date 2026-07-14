@@ -1,0 +1,37 @@
+<div class="container d-flex align-items-center justify-content-center min-vh-100 fade-in">
+    <div class="card shadow-lg border-0 rounded-4" style="width: 420px; max-width: 100%;">
+        <div class="card-body p-5">
+            <div class="text-center mb-5">
+                <div class="bg-primary text-white rounded-4 d-inline-flex align-items-center justify-content-center mb-4 shadow" style="width: 70px; height: 70px; font-size: 32px; transform: rotate(-5deg);">
+                    <i class="fas fa-graduation-cap" style="transform: rotate(5deg);"></i>
+                </div>
+                <h4 class="fw-bold text-dark tracking-tight mb-1">SI-MENGAJAR</h4>
+                <p class="text-muted small">Masuk ke ruang kerja Anda</p>
+            </div>
+            
+            <div id="vercelLoginInfo" class="mb-4">
+    <label class="form-label text-muted small mb-1">Masukkan Email Anda:</label>
+    <div class="input-group">
+        <span class="input-group-text bg-light"><i class="fas fa-envelope text-muted"></i></span>
+        <input type="email" id="inputEmail" class="form-control" placeholder="email@sekolah.id" required>
+    </div>
+</div>
+<div id="googleAccountInfo" class="text-center mb-4 d-none">
+                <p class="text-muted small mb-1">Anda login sebagai:</p>
+                <div class="d-inline-flex align-items-center bg-light px-3 py-2 rounded-pill border">
+                    <i class="fab fa-google text-danger me-2"></i>
+                    <strong id="displayEmail" class="text-dark">Memuat...</strong>
+                </div>
+            </div>
+
+            <button type="button" class="btn btn-primary w-100 py-3 rounded-4 fw-bold shadow-sm" id="btnLoginGoogle" onclick="loginWithGoogleAccount()">
+                <i class="fas fa-sign-in-alt me-2"></i> Lanjutkan Masuk Aplikasi
+            </button>
+            
+            <div class="text-center mt-5 text-muted" style="font-size: 12px;">
+                Ditenagai oleh Google Workspace<br>
+                Autentikasi terintegrasi dengan Akun Google
+            </div>
+        </div>
+    </div>
+</div>

@@ -1,0 +1,304 @@
+<script>
+    var currentJadwalData = [];
+
+    function initJadwal() {
+        const hariIniStr = getHariIni();
+        const infoEl = document.getElementById('infoHariIni');
+        if(infoEl) infoEl.innerHTML = `<i class="fas fa-calendar-day me-2"></i>Hari Ini: ${hariIniStr}`;
+
+        document.getElementById('filterHari').addEventListener('change', function() {
+            renderJadwal(currentJadwalData, this.value);
+        });
+
+        if(typeof google !== 'undefined' && google.script) {
+            google.script.run
+                .withSuccessHandler((res) => {
+                    if(res.success) {
+                        currentJadwalData = res.data;
+                        renderJadwal(currentJadwalData, '');
+                    } else {
+                        showJadwalError(res.message);
+                    }
+                })
+                .withFailureHandler(err => showJadwalError(err.message))
+                .getJadwalData(currentUser ? currentUser.email : '');
+        } else {
+            // Dummy Data
+            currentJadwalData = [
+                { id: 'J01', hari: 'Senin', jamMulai: '07:30', jamSelesai: '09:00', jamKe: '1-2', mapel: 'Matematika Peminatan', kelas: 'XII MIPA 1', ruangan: 'R. 201', semester: 'Ganjil', tahunAjaran: '2023/2024' },
+                { id: 'J02', hari: 'Senin', jamMulai: '09:00', jamSelesai: '10:30', jamKe: '3-4', mapel: 'Matematika Peminatan', kelas: 'XII MIPA 2', ruangan: 'R. 202', semester: 'Ganjil', tahunAjaran: '2023/2024' },
+                { id: 'J03', hari: 'Selasa', jamMulai: '07:30', jamSelesai: '09:00', jamKe: '1-2', mapel: 'Matematika Wajib', kelas: 'X IPS 1', ruangan: 'R. 104', semester: 'Ganjil', tahunAjaran: '2023/2024' },
+                { id: 'J04', hari: 'Selasa', jamMulai: '10:30', jamSelesai: '12:00', jamKe: '5-6', mapel: 'Matematika Wajib', kelas: 'X IPS 2', ruangan: 'R. 105', semester: 'Ganjil', tahunAjaran: '2023/2024' },
+                { id: 'J05', hari: 'Rabu', jamMulai: '08:00', jamSelesai: '09:30', jamKe: '2-3', mapel: 'Matematika Peminatan', kelas: 'XI MIPA 1', ruangan: 'Lab Komputer', semester: 'Ganjil', tahunAjaran: '2023/2024' },
+                { id: 'J06', hari: 'Kamis', jamMulai: '07:30', jamSelesai: '09:00', jamKe: '1-2', mapel: 'Matematika Wajib', kelas: 'X IPS 1', ruangan: 'R. 104', semester: 'Ganjil', tahunAjaran: '2023/2024' },
+                { id: 'J07', hari: 'Jumat', jamMulai: '08:00', jamSelesai: '09:30', jamKe: '2-3', mapel: 'Matematika Peminatan', kelas: 'XI MIPA 1', ruangan: 'Lab Komputer', semester: 'Ganjil', tahunAjaran: '2023/2024' }
+            ];
+            
+            // Auto select current day in filter if exist, else show all
+            const fd = document.getElementById('filterHari');
+            if(hariIniStr !== 'Sabtu' && hariIniStr !== 'Minggu') {
+                fd.value = hariIniStr;
+                renderJadwal(currentJadwalData, hariIniStr);
+            } else {
+                renderJadwal(currentJadwalData, '');
+            }
+        }
+    }
+
+    function showJadwalError(msg) {
+        if(document.getElementById('jadwalTableBody')) if(document.getElementById('jadwalTableBody')) if(document.getElementById('jadwalTableBody')) document.getElementById('jadwalTableBody').innerHTML = `<tr><td colspan="6" class="text-center text-danger py-4">${msg}</td></tr>`;
+        if(document.getElementById('jadwalTimelineBody')) if(document.getElementById('jadwalTimelineBody')) if(document.getElementById('jadwalTimelineBody')) document.getElementById('jadwalTimelineBody').innerHTML = `<div class="text-center text-danger py-4">${msg}</div>`;
+    }
+
+    function getHariIni() {
+        const days = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'];
+        return days[new Date().getDay()];
+    }
+
+    function renderJadwal(data, filterHari) {
+        const tbody = document.getElementById('jadwalTableBody');
+        const timelineBody = document.getElementById('jadwalTimelineBody');
+        const hariIniStr = getHariIni();
+        
+        let filteredData = data;
+        if(filterHari) {
+            filteredData = data.filter(d => d.hari === filterHari);
+        }
+
+        // --- RENDER TABLE ---
+        if(filteredData.length === 0) {
+            tbody.innerHTML = `<tr><td colspan="6" class="text-center text-muted py-5"><div class="mb-2"><i class="fas fa-calendar-times fs-2"></i></div>Tidak ada jadwal mengajar pada hari ini.</td></tr>`;
+        } else {
+            let html = '';
+            filteredData.forEach((item, index) => {
+                const isHariIni = item.hari === hariIniStr;
+                const rowClass = isHariIni ? 'bg-primary bg-opacity-10' : '';
+                const textHighlight = isHariIni ? 'text-primary fw-bold' : 'text-dark fw-bold';
+                
+                html += `
+                    <tr class="${rowClass}">
+                        <td class="ps-4 text-muted">${index + 1}</td>
+                        <td>
+                            <div class="fw-bold ${isHariIni ? 'text-primary' : 'text-dark'}">${item.hari} ${isHariIni ? '<span class="badge bg-primary ms-1" style="font-size:9px">HARI INI</span>' : ''}</div>
+                            <div class="font-monospace text-muted mt-1" style="font-size: 13px;">${item.jamMulai} - ${item.jamSelesai}</div>
+                            <div class="badge bg-white text-dark border px-2 py-1 mt-1 shadow-sm" style="font-size:10px;">Jam ke ${item.jamKe}</div>
+                        </td>
+                        <td class="${textHighlight} fs-6">${item.mapel}</td>
+                        <td>
+                            <div class="badge bg-secondary bg-opacity-10 text-secondary border border-secondary border-opacity-25 px-2 py-1">${item.kelas}</div>
+                            <div class="text-muted mt-1" style="font-size: 12px;"><i class="fas fa-map-marker-alt me-1"></i>${item.ruangan}</div>
+                        </td>
+                        <td>
+                            <div class="text-muted" style="font-size: 13px;">Smst: ${item.semester}</div>
+                            <div class="text-muted" style="font-size: 12px;">TA: ${item.tahunAjaran}</div>
+                        </td>
+                        <td class="pe-4 text-end">
+                            <div class="d-flex justify-content-end gap-1">
+                                ${isHariIni ? `
+                                    <button class="btn btn-sm btn-primary rounded-3 shadow-sm px-2" onclick="loadPage('absensi')" title="Isi Absensi Kelas Ini">
+                                        <i class="fas fa-user-check"></i>
+                                    </button>
+                                ` : ''}
+                                <button class="btn btn-sm btn-light border text-primary" onclick="editJadwal('${item.id}')" title="Edit">
+                                    <i class="fas fa-edit"></i>
+                                </button>
+                                <button class="btn btn-sm btn-light border text-danger" onclick="hapusJadwal('${item.id}')" title="Hapus">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                `;
+            });
+            tbody.innerHTML = html;
+        }
+
+        // --- RENDER TIMELINE ---
+        const groupedByHari = {};
+        ['Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat'].forEach(h => {
+            const hariData = data.filter(d => d.hari === h).sort((a,b) => a.jamMulai.localeCompare(b.jamMulai));
+            if(hariData.length > 0) groupedByHari[h] = hariData;
+        });
+
+        let tHtml = '';
+        if(Object.keys(groupedByHari).length === 0) {
+             tHtml = '<div class="text-center text-muted py-5">Belum ada jadwal yang disusun.</div>';
+        } else {
+            Object.keys(groupedByHari).forEach(hari => {
+                const jadwalHariIni = groupedByHari[hari];
+                const isHariIni = hari === hariIniStr;
+                
+                tHtml += `
+                    <div class="mb-5 bg-white p-4 rounded-4 shadow-sm border border-light">
+                        <h5 class="fw-bold mb-4 ${isHariIni ? 'text-primary' : 'text-dark'} d-flex align-items-center pb-2 border-bottom">
+                            <i class="fas fa-calendar-day me-2"></i>${hari}
+                            ${isHariIni ? '<span class="badge bg-primary ms-3 px-2 py-1 fs-6 shadow-sm">Hari Ini</span>' : ''}
+                        </h5>
+                        <div class="timeline ms-3 mt-3">
+                `;
+                
+                jadwalHariIni.forEach(item => {
+                    tHtml += `
+                        <div class="timeline-item pb-4">
+                            <div class="timeline-marker ${isHariIni ? 'bg-primary border-white' : 'bg-secondary border-light'}" style="width:16px;height:16px;left:-9px;"></div>
+                            <div class="card ${isHariIni ? 'border-primary border-opacity-25' : 'border-light'} bg-light bg-opacity-25 shadow-sm ms-2 transition-all hover-shadow">
+                                <div class="card-body p-3">
+                                    <div class="row align-items-center">
+                                        <div class="col-md-3 border-end">
+                                            <div class="text-muted font-monospace fw-bold text-primary"><i class="far fa-clock me-1"></i>${item.jamMulai} - ${item.jamSelesai}</div>
+                                            <div class="text-muted small mt-1">Jam ke-${item.jamKe}</div>
+                                        </div>
+                                        <div class="col-md-6 px-4">
+                                            <h6 class="fw-bold mb-1 ${isHariIni ? 'text-primary' : 'text-dark'}">${item.mapel}</h6>
+                                            <div class="text-muted small mt-2">
+                                                <span class="badge bg-white text-dark border me-2 shadow-sm">${item.kelas}</span>
+                                                <i class="fas fa-map-marker-alt me-1"></i>${item.ruangan}
+                                            </div>
+                                        </div>
+                                        <div class="col-md-3 text-end">
+                                            ${isHariIni ? `
+                                                <button class="btn btn-primary btn-sm rounded-3 px-3 shadow-sm w-100" onclick="loadPage('absensi')">
+                                                    <i class="fas fa-user-check me-1"></i> Mulai Absen
+                                                </button>
+                                            ` : `<span class="badge bg-light text-muted border">Belum Waktunya</span>`}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                });
+                tHtml += `</div></div>`;
+            });
+        }
+        
+        timelineBody.innerHTML = tHtml;
+    }
+
+    var modalJadwalInstance = null;
+
+    function showModalJadwal() {
+        document.getElementById('formJadwal').reset();
+        if(document.getElementById('jadwalId')) if(document.getElementById('jadwalId')) if(document.getElementById('jadwalId')) document.getElementById('jadwalId').value = '';
+        if(document.getElementById('modalJadwalLabel')) if(document.getElementById('modalJadwalLabel')) if(document.getElementById('modalJadwalLabel')) document.getElementById('modalJadwalLabel').textContent = 'Tambah Jadwal Baru';
+        
+        if(!modalJadwalInstance) {
+            modalJadwalInstance = new bootstrap.Modal(document.getElementById('modalJadwal'));
+        }
+        modalJadwalInstance.show();
+    }
+
+    function editJadwal(id) {
+        const jadwal = currentJadwalData.find(j => j.id === id);
+        if(!jadwal) return;
+
+        if(document.getElementById('jadwalId')) if(document.getElementById('jadwalId')) if(document.getElementById('jadwalId')) document.getElementById('jadwalId').value = jadwal.id;
+        if(document.getElementById('jadwalHari')) if(document.getElementById('jadwalHari')) if(document.getElementById('jadwalHari')) document.getElementById('jadwalHari').value = jadwal.hari;
+        if(document.getElementById('jadwalJamKe')) if(document.getElementById('jadwalJamKe')) if(document.getElementById('jadwalJamKe')) document.getElementById('jadwalJamKe').value = jadwal.jamKe;
+        if(document.getElementById('jadwalJamMulai')) if(document.getElementById('jadwalJamMulai')) if(document.getElementById('jadwalJamMulai')) document.getElementById('jadwalJamMulai').value = jadwal.jamMulai;
+        if(document.getElementById('jadwalJamSelesai')) if(document.getElementById('jadwalJamSelesai')) if(document.getElementById('jadwalJamSelesai')) document.getElementById('jadwalJamSelesai').value = jadwal.jamSelesai;
+        if(document.getElementById('jadwalMapel')) if(document.getElementById('jadwalMapel')) if(document.getElementById('jadwalMapel')) document.getElementById('jadwalMapel').value = jadwal.mapel;
+        if(document.getElementById('jadwalKelas')) if(document.getElementById('jadwalKelas')) if(document.getElementById('jadwalKelas')) document.getElementById('jadwalKelas').value = jadwal.kelas;
+        if(document.getElementById('jadwalRuangan')) if(document.getElementById('jadwalRuangan')) if(document.getElementById('jadwalRuangan')) document.getElementById('jadwalRuangan').value = jadwal.ruangan;
+        if(document.getElementById('jadwalSemester')) if(document.getElementById('jadwalSemester')) if(document.getElementById('jadwalSemester')) document.getElementById('jadwalSemester').value = jadwal.semester;
+        if(document.getElementById('jadwalTahunAjaran')) if(document.getElementById('jadwalTahunAjaran')) if(document.getElementById('jadwalTahunAjaran')) document.getElementById('jadwalTahunAjaran').value = jadwal.tahunAjaran;
+
+        if(document.getElementById('modalJadwalLabel')) if(document.getElementById('modalJadwalLabel')) if(document.getElementById('modalJadwalLabel')) document.getElementById('modalJadwalLabel').textContent = 'Edit Jadwal';
+        
+        if(!modalJadwalInstance) {
+            modalJadwalInstance = new bootstrap.Modal(document.getElementById('modalJadwal'));
+        }
+        modalJadwalInstance.show();
+    }
+
+    function simpanJadwal() {
+        const form = document.getElementById('formJadwal');
+        if(!form.checkValidity()) {
+            form.reportValidity();
+            return;
+        }
+
+        const id = document.getElementById('jadwalId').value;
+        const payload = {
+            id: id || 'J' + new Date().getTime(),
+            hari: document.getElementById('jadwalHari').value,
+            jamKe: document.getElementById('jadwalJamKe').value,
+            jamMulai: document.getElementById('jadwalJamMulai').value,
+            jamSelesai: document.getElementById('jadwalJamSelesai').value,
+            mapel: document.getElementById('jadwalMapel').value,
+            kelas: document.getElementById('jadwalKelas').value,
+            ruangan: document.getElementById('jadwalRuangan').value,
+            semester: document.getElementById('jadwalSemester').value,
+            tahunAjaran: document.getElementById('jadwalTahunAjaran').value
+        };
+
+        modalJadwalInstance.hide();
+        showLoading('Menyimpan Jadwal...');
+
+        if(typeof google !== 'undefined' && google.script) {
+            google.script.run
+                .withSuccessHandler((res) => {
+                    hideLoading();
+                    if(res.success) {
+                        showAlert('Sukses', res.message, 'success');
+                        initJadwal();
+                    } else {
+                        showAlert('Gagal', res.message, 'error');
+                    }
+                })
+                .saveJadwal(payload);
+        } else {
+            setTimeout(() => {
+                hideLoading();
+                if(id) {
+                    const idx = currentJadwalData.findIndex(j => j.id === id);
+                    if(idx !== -1) currentJadwalData[idx] = payload;
+                } else {
+                    currentJadwalData.push(payload);
+                }
+                const filterHari = document.getElementById('filterHari').value;
+                renderJadwal(currentJadwalData, filterHari);
+                showAlert('Berhasil', 'Jadwal berhasil disimpan (Preview Mode).', 'success');
+            }, 600);
+        }
+    }
+
+    function hapusJadwal(id) {
+        Swal.fire({
+            title: 'Hapus Jadwal?',
+            text: "Data jadwal yang dihapus tidak dapat dikembalikan!",
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#dc3545',
+            cancelButtonColor: '#6c757d',
+            confirmButtonText: 'Ya, Hapus!',
+            cancelButtonText: 'Batal',
+            reverseButtons: true
+        }).then((result) => {
+            if (result.isConfirmed) {
+                showLoading('Menghapus...');
+                if(typeof google !== 'undefined' && google.script) {
+                    google.script.run
+                        .withSuccessHandler((res) => {
+                            hideLoading();
+                            if(res.success) {
+                                showAlert('Terhapus', res.message, 'success');
+                                initJadwal();
+                            } else {
+                                showAlert('Gagal', res.message, 'error');
+                            }
+                        })
+                        .deleteJadwal(id);
+                } else {
+                    setTimeout(() => {
+                        hideLoading();
+                        currentJadwalData = currentJadwalData.filter(j => j.id !== id);
+                        const filterHari = document.getElementById('filterHari').value;
+                        renderJadwal(currentJadwalData, filterHari);
+                        showAlert('Terhapus', 'Jadwal berhasil dihapus (Preview Mode).', 'success');
+                    }, 600);
+                }
+            }
+        });
+    }
+</script>

@@ -1,0 +1,107 @@
+<div class="d-flex">
+    <div id="sidebar-container"></div>
+    
+    <div class="main-content flex-grow-1" id="main-wrapper">
+        <div id="navbar-container"></div>
+        
+        <div class="container-fluid p-4" style="margin-top: 60px;">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <div>
+                    <h3 class="fw-bold text-dark mb-1">Penilaian Siswa</h3>
+                    <nav aria-label="breadcrumb">
+                        <ol class="breadcrumb mb-0">
+                            <li class="breadcrumb-item"><a href="#" onclick="loadPage('dashboard')" class="text-decoration-none">Dashboard</a></li>
+                            <li class="breadcrumb-item active" aria-current="page">Penilaian</li>
+                        </ol>
+                    </nav>
+                </div>
+            </div>
+
+            <!-- Form Filter Penilaian -->
+            <div class="card border-0 shadow-sm rounded-4 mb-4">
+                <div class="card-body p-4">
+                    <form id="formFilterPenilaian" onsubmit="loadSiswaPenilaian(event)">
+                        <div class="row g-3 align-items-end">
+                            <div class="col-md-3">
+                                <label class="form-label small fw-bold text-muted">Kelas <span class="text-danger">*</span></label>
+                                <select class="form-select bg-light border-0" id="filterKelasNilai" required>
+                                    <option value="">-- Pilih --</option>
+                                    <option value="XII MIPA 1">XII MIPA 1</option>
+                                    <option value="XII MIPA 2">XII MIPA 2</option>
+                                    <option value="XI MIPA 1">XI MIPA 1</option>
+                                </select>
+                            </div>
+                            <div class="col-md-3">
+                                <label class="form-label small fw-bold text-muted">Mata Pelajaran <span class="text-danger">*</span></label>
+                                <select class="form-select bg-light border-0" id="filterMapelNilai" required>
+                                    <option value="">-- Pilih --</option>
+                                    <option value="Matematika Peminatan">Matematika Peminatan</option>
+                                    <option value="Matematika Wajib">Matematika Wajib</option>
+                                </select>
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label small fw-bold text-muted">Jenis Penilaian <span class="text-danger">*</span></label>
+                                <select class="form-select bg-light border-0" id="filterJenisNilai" required>
+                                    <option value="">-- Pilih Jenis --</option>
+                                    <option value="Formatif 1">Formatif 1</option>
+                                    <option value="Formatif 2">Formatif 2</option>
+                                    <option value="Sumatif 1">Sumatif 1</option>
+                                    <option value="PTS">Penilaian Tengah Semester (PTS)</option>
+                                    <option value="PAS">Penilaian Akhir Semester (PAS)</option>
+                                    <option value="Tugas">Tugas Proyek / Portofolio</option>
+                                </select>
+                            </div>
+                            <div class="col-md-2">
+                                <button type="submit" class="btn btn-primary w-100 rounded-3 shadow-sm">
+                                    <i class="fas fa-search me-2"></i>Tampilkan
+                                </button>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Area Input Nilai -->
+            <div class="card border-0 shadow-sm rounded-4" id="cardInputNilai" style="display:none;">
+                <div class="card-header bg-white border-bottom pt-4 pb-3 px-4 d-flex justify-content-between align-items-center">
+                    <div>
+                        <h5 class="fw-bold mb-1">Input Nilai Siswa</h5>
+                        <div class="text-muted small" id="infoPenilaianText"></div>
+                    </div>
+                    <div>
+                        <span class="badge bg-danger bg-opacity-10 text-danger border border-danger border-opacity-25 px-3 py-2">KKM: <span id="infoKKM">75</span></span>
+                    </div>
+                </div>
+                
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle mb-0" id="tablePenilaian">
+                            <thead class="table-light text-muted small text-uppercase">
+                                <tr>
+                                    <th class="ps-4 py-3" width="5%">No</th>
+                                    <th class="py-3" width="15%">NIS</th>
+                                    <th class="py-3" width="40%">Nama Siswa</th>
+                                    <th class="py-3 text-center" width="20%">Nilai (0-100)</th>
+                                    <th class="pe-4 py-3" width="20%">Keterangan</th>
+                                </tr>
+                            </thead>
+                            <tbody id="penilaianTableBody" class="border-top-0">
+                                <!-- Data injected via JS -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                <div class="card-footer bg-light border-top py-4 px-4 d-flex justify-content-between align-items-center rounded-bottom-4">
+                    <div class="text-muted small">
+                        <i class="fas fa-info-circle me-1"></i> Nilai di bawah KKM akan ditandai <span class="text-danger fw-bold">merah</span> otomatis.
+                    </div>
+                    <button class="btn btn-primary rounded-3 px-4 shadow-sm" onclick="simpanPenilaian()">
+                        <i class="fas fa-save me-2"></i>Simpan Nilai
+                    </button>
+                </div>
+            </div>
+            
+            <div id="footer-container" class="mt-4"></div>
+        </div>
+    </div>
+</div>
